@@ -1,0 +1,90 @@
+/* Avatar + Speech Bubble 共通デザイン
+   （GuideAvatar.vue / ReactiveAvatar.vue 共通）*/
+
+/* --- 全体ボックス（レイアウト固定） --- */
+.avatar-bubble {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin: 1.2rem auto;
+    width: 100%;
+    max-width: 420px; /* ⬅ 全体を少しコンパクト */
+    height: 120px; 
+    position: relative;/* ::after の基準 */
+    flex-shrink: 0;
+  }
+  
+  
+  /* --- アバター画像 --- */
+  .avatar-img {
+    width: 100px;
+    height: 100px;  
+    object-fit: contain;
+    border-radius: 70%;
+    transition: opacity 0.6s ease, transform 0.6s ease;
+    flex-shrink: 0;
+  }
+  
+
+/* --- 吹き出し本体 --- */
+.speech-bubble {
+    position: relative;
+    background: rgba(245, 250, 255, 0.85);
+    border: 1px solid rgba(130, 190, 255, 0.8);
+    border-radius: 10px;
+    width: 260px;
+    height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem 1rem;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #1c2b4a;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 3px 12px rgba(120, 180, 255, 0.35);
+    overflow: visible;
+    text-overflow: ellipsis;
+    white-space: normal;
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  
+  /* --- 吹き出しのしっぽ（左向き） --- */
+
+  
+  .speech-bubble::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: -11px; /* 吹き出しの外側に少し出す */
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 7px solid transparent;     /* 上辺を透明に */
+    border-bottom: 7px solid transparent;  /* 下辺を透明に */
+    border-right: 10px solid rgba(245, 250, 255, 0.85); /* ←左向き三角形 */
+    filter: drop-shadow(0 0 1px rgba(130, 190, 255, 0.6)); /* 輪郭を自然に */
+    z-index: 1;
+  }
+  
+  /* --- スマホ対応（縦配置） --- */
+  @media (max-width: 480px) {
+    .avatar-bubble {
+      flex-direction: column;
+      height: auto;
+      gap: 0.5rem;
+    }
+  
+    .speech-bubble {
+      width: 90%;
+      height: 90px;
+      font-size: 0.9rem;
+    }
+  
+    .avatar-img {
+      width: 90px;
+      height: 90px;
+    }
+  }
+  
