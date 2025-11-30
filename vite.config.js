@@ -33,17 +33,17 @@ export default defineConfig({
             purpose: 'any'
           }
         ],
-        screenshots: [
+        "screenshots": [
           {
-            src: '/screenshot1.png',
-            sizes: '1280x720',
-            type: 'image/png',
-            form_factor: 'wide'
+            "src": "/screenshot1.png",
+            "sizes": "1050x1393",
+            "type": "image/png",
+            "form_factor": "wide"
           },
           {
-            src: '/screenshot2.png',
-            sizes: '720x1280',
-            type: 'image/png'
+            "src": "/screenshot2.png",
+            "sizes": "954x1421",
+            "type": "image/png"
           }
         ]
       },
