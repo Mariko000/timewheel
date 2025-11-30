@@ -9,15 +9,12 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: 'prompt',
-      includeAssets: [
-        'favicon.ico',
-        'apple-touch-icon.png'
-      ],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
       manifest: {
         name: 'TimeWheel',
         short_name: 'TimeWheel',
         description: 'あなたのスケジュールとToDoを整理し、自動生成してくれるアプリ。',
-        theme_color: '#0b0f29',  
+        theme_color: '#0b0f29',
         background_color: '#0b0f29',
         display: 'standalone',
         orientation: 'portrait',
@@ -34,7 +31,20 @@ export default defineConfig({
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any'
+          }
+        ],
+        screenshots: [
+          {
+            src: '/screenshot1.png',
+            sizes: '1280x720',
+            type: 'image/png',
+            form_factor: 'wide'
           },
+          {
+            src: '/screenshot2.png',
+            sizes: '720x1280',
+            type: 'image/png'
+          }
         ]
       },
       workbox: {
