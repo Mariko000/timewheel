@@ -8,11 +8,10 @@ export default defineConfig({
   plugins: [
     vue(),
     VitePWA({
-      registerType: 'prompt', // ユーザーに「インストール」案内
+      registerType: 'prompt',
       includeAssets: [
         'favicon.ico',
-        'favicon.svg',
-        'apple-touch-icon.png',
+        'apple-touch-icon.png'
       ],
       manifest: {
         name: 'TimeWheel',
@@ -25,16 +24,16 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            "src": "/web-app-manifest-192x192.png",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "any"
+            src: '/web-app-manifest-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any'
           },
           {
-            "src": "/web-app-manifest-512x512.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "any"
+            src: '/web-app-manifest-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any'
           },
         ]
       },
