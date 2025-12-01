@@ -8,8 +8,8 @@ export default defineConfig({
   plugins: [
     vue(),
     VitePWA({
-      registerType: 'prompt',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
+      registerType: 'autoUpdate', // Service Worker 自動更新
+      includeAssets: [],           // public 配下の画像はプリキャッシュしない
       manifest: {
         name: 'TimeWheel',
         short_name: 'TimeWheel',
