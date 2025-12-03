@@ -77,6 +77,38 @@ const router = useRouter()
 // 通知
 let reminderCheckTimer = null
 
+// ------------------------------
+// 📌 フォアグラウンド通知テスト用
+// ------------------------------
+function sendNotification(message = "🔔 通知テスト") {
+  if (!("Notification" in window)) {
+    console.log("❌ このブラウザは通知未対応");
+    return;
+  }
+
+  // すでに許可されている場合
+  if (Notification.permission === "granted") {
+    new Notification("TimeWheel 通知", {
+      body: message,
+      icon: "/icons/icon-192x192.png"
+    });
+    return;
+  }
+
+  // 許可をまだ求めていない場合
+  if (Notification.permission === "default") {
+    Notification.requestPermission().then(permission => {
+      console.log("通知許可:", permission);
+      if (permission === "granted") {
+        new Notification("🎉 通知がオンになりました！", {
+          body: "今後ここに通知が届きます。",
+        });
+      }
+    });
+  }
+}
+
+
 // 時刻計算関数
 function subtractMinutes(timeStr, minutes) {
   // "HH:MM" -> Date 型に変換
@@ -148,7 +180,8 @@ function checkReminders() {
     // 💡 ここ追加：通知しないならスキップ
     if (!item || item.reminderOffset === "none") return
 
-    const reminderMoment = subtractMinutes(item.start, Number(item.reminderOffset))
+    const reminderMoment = item._reminderTime ?? subtractMinutes(item.start, Number(item.reminderOffset));
+
 
     if (!item.notified && reminderMoment === current) {
       sendReminder(item)
@@ -160,21 +193,43 @@ function checkReminders() {
 
 //全体通知設定を一括で管理/全タスクに反映させる
 function applyGlobalReminder() {
+  const offset = store.globalReminderOffset;
+
+  // --- ① 全タスクに新しい通知設定を反映 ---
   store.schedule.forEach(item => {
-    item.reminderOffset = store.globalReminderOffset
-  })
-  store.saveSchedule()
+    item.reminderOffset = offset;
+    item.notified = false; // 再通知できるようリセット
+  });
+
+  // --- ② 通知なしならここで終了 ---
+  if (offset === "none") {
+    console.log("⏹ 全通知オフ");
+    store.saveSchedule();
+    return;
+  }
+
+  // --- ③ 時間を計算し直す ---
+  store.schedule.forEach(item => {
+    if (!item.start) return;
+
+    const reminderMoment = subtractMinutes(item.start, Number(offset));
+
+    // タスクに計算済みの通知時間を保存
+    item._reminderTime = reminderMoment;
+  });
+
+  store.saveSchedule();
+
+  console.log(`🔔 全タスク通知を "${offset}分前" に再設定しました`);
 }
+
 
 //通知を表示する関数
 function sendReminder(task) {
-  if (Notification.permission === "granted") {
-    new Notification("リマインダー", {
-      body: `${task.activity} の時間です。`,
-      icon: "/icons/icon-192x192.png"
-    })
-  }
+  if (!task) return;
+  sendNotification(`${task.activity} の時間です。`);
 }
+
 //FinishView を離れたら監視停止
 
 onUnmounted(() => {
