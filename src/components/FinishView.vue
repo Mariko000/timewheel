@@ -11,6 +11,19 @@
                    <!-- 各タスクの完了済を「見た目上」消す（非表示）-->
 
                    <div v-if="store.schedule.length">
+
+                                 <!-- リマインダーの時間選択 -->
+<!-- 全体通知設定（代表 select） -->
+<div class="global-reminder">
+  <label>通知設定:</label>
+  <select v-model="store.globalReminderOffset" @change="applyGlobalReminder">
+    <option value="none">通知しない</option>
+    <option value="0">時間ちょうど</option>
+    <option value="5">5分前</option>
+    <option value="10">10分前</option>
+    <option value="15">15分前</option>
+  </select>
+</div>
                   <div
                    v-for="(element, index) in store.schedule"
                    :key="element.id"
@@ -31,7 +44,10 @@
             <span class="activity-name">{{ element.activity }}</span>
             <span class="activity-time-text">{{ element.start }}〜{{ element.end }}</span>
             </div>
-            </div>
+
+</div>
+
+
 
             <!-- 完了ボタン -->
 
@@ -51,31 +67,61 @@
 </template>
   
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import { useScheduleStore } from '@/stores/scheduleStore'
 import { useRouter } from 'vue-router'
 
 const store = useScheduleStore()
 const router = useRouter()
 
+// 通知
+let reminderCheckTimer = null
+
+// 時刻計算関数
+function subtractMinutes(timeStr, minutes) {
+  // "HH:MM" -> Date 型に変換
+  const [h, m] = timeStr.split(":").map(Number)
+  const d = new Date()
+  d.setHours(h)
+  d.setMinutes(m - minutes)
+  const hh = String(d.getHours()).padStart(2,"0")
+  const mm = String(d.getMinutes()).padStart(2,"0")
+  return `${hh}:${mm}`
+}
+
+
+//一度だけ許可ダイアログ
+onMounted(() => {
+  if (Notification.permission === "default") {
+    Notification.requestPermission().then(result => {
+      console.log("通知許可:", result)
+    })
+  }
+})
+
 onMounted(() => {
   const todayKey = new Date().toISOString().slice(0, 10)
-
   store.loadSchedule(todayKey)
 
-  // 🔥 schedule が undefined / null の場合でも落ちないようにする
   if (!Array.isArray(store.schedule)) {
     store.schedule = []
   }
 
-  // 🔥 completed フラグを追加（安全に）＋アニメーション用フラグ
   store.schedule.forEach(item => {
-    if (item && item.completed === undefined) item.completed = false
-    item.isGlowing = false       // ← ここを追加
+    if (item.completed === undefined) item.completed = false
+    item.isGlowing = false
+    if (item.reminderOffset === undefined) {
+      item.reminderOffset = store.globalReminderOffset // ← 代表値を初期値に
+    }
+    if (item.notified === undefined) {
+      item.notified = false
+    }
   })
 
   store.saveSchedule(todayKey)
 })
+
+
 
 // タスククリック時の光アニメーション
 function toggleComplete(index) {
@@ -89,6 +135,52 @@ function toggleComplete(index) {
   item.isGlowing = true
   setTimeout(() => { item.isGlowing = false }, 800)   // 0.8秒で消える
 }
+
+onMounted(() => {
+  reminderCheckTimer = setInterval(checkReminders, 60 * 1000) // 1分ごと
+})
+//"none" が数値化されないようにする
+function checkReminders() {
+  const now = new Date()
+  const current = now.toTimeString().slice(0, 5)
+
+  store.schedule.forEach(item => {
+    // 💡 ここ追加：通知しないならスキップ
+    if (!item || item.reminderOffset === "none") return
+
+    const reminderMoment = subtractMinutes(item.start, Number(item.reminderOffset))
+
+    if (!item.notified && reminderMoment === current) {
+      sendReminder(item)
+      item.notified = true
+      store.saveSchedule()
+    }
+  })
+}
+
+//全体通知設定を一括で管理/全タスクに反映させる
+function applyGlobalReminder() {
+  store.schedule.forEach(item => {
+    item.reminderOffset = store.globalReminderOffset
+  })
+  store.saveSchedule()
+}
+
+//通知を表示する関数
+function sendReminder(task) {
+  if (Notification.permission === "granted") {
+    new Notification("リマインダー", {
+      body: `${task.activity} の時間です。`,
+      icon: "/icons/icon-192x192.png"
+    })
+  }
+}
+//FinishView を離れたら監視停止
+
+onUnmounted(() => {
+  if (reminderCheckTimer) clearInterval(reminderCheckTimer)
+})
+
 
 // 完了ボタン押下時
 function finishTodos() {

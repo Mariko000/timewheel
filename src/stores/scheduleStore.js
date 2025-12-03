@@ -66,8 +66,9 @@ export const useScheduleStore = defineStore('schedule', () => {
 
 // 時間変換系
 function toMinutes(timeStr) {
+  if (!timeStr) return 0 // ← null でも安全
   const [h,m] = timeStr.split(':').map(Number)
-  return h*60 + m
+  return h * 60 + m
 }
 function absoluteMinutes(val) {
   let m;
@@ -100,21 +101,31 @@ function normalizeMinutes(val) {
   return typeof val === "string" ? Number(val) : val
 }
 
-  function getMainActivityBlock() {
-    if (mainActivity.value === '自由') return null
-    return {
-      start: toMinutes(mainActivityStart.value),
-      end: toMinutes(mainActivityEnd.value),
-      startTime: mainActivityStart.value,
-      endTime: mainActivityEnd.value,
-      label: mainActivity.value
-    }
+function getMainActivityBlock() {
+  // メイン活動なしなら null 返す
+  if (
+    mainActivity.value === "なし" ||
+    mainActivity.value === "自由" ||
+    (mainActivity.value === "カスタム" && (!mainActivityStart.value || !mainActivityEnd.value))
+  ) {
+    return null
   }
+
+  return {
+    start: toMinutes(mainActivityStart.value),
+    end: toMinutes(mainActivityEnd.value),
+    startTime: mainActivityStart.value,
+    endTime: mainActivityEnd.value,
+    label: mainActivity.value
+  }
+}
+
 
   function generateSchedule() {
     const startDay = absoluteMinutes(wakeTime.value)
     const endDay = absoluteMinutes(sleepTime.value)
     const mainBlock = getMainActivityBlock()
+    const hasMainActivity = !!mainBlock
     const isHoliday = mainActivity.value === '休日'
     let current = startDay
     const acts = activities.value.map(a => ({ ...a }))
@@ -134,7 +145,20 @@ function normalizeMinutes(val) {
       result.push({ start:"12:15", end:"13:00", activity:"昼食" })
       fillSlot(result, toMinutes("13:00"), endDay, acts, "holiday")
     } else {
-      // 通勤／通学
+
+        // 「なし」「カスタム」の場合 → 朝準備/朝食のあとすぐ活動を埋める
+  if (mainActivity.value === "なし" || mainActivity.value === "カスタム") {
+    fillSlot(result, current, endDay, acts, "free")
+
+    // 最後に夕方ルーチンを強制挿入
+    const eveningPrepStart = toMinutes(sleepTime.value) - 45 // (15分準備 + 30分夕食)
+    result.push({ start: toTimeString(eveningPrepStart), end: toTimeString(eveningPrepStart + 15), activity:"夕方準備" })
+    result.push({ start: toTimeString(eveningPrepStart + 15), end: toTimeString(eveningPrepStart + 45), activity:"夕食" })
+
+    schedule.value = result
+    return
+  }
+        // 通勤／通学
       let commuteLabel = null
       if (mainActivity.value === "学校") commuteLabel = "通学"
       else if (["早番シフト","日勤帯","夜勤帯①","夜勤帯②"].includes(mainActivity.value)) commuteLabel = "通勤"
@@ -152,6 +176,7 @@ function normalizeMinutes(val) {
           end: toTimeString(mainStartAbs),
           activity: `${commuteLabel}（行き）`
         })
+
       
         // メイン活動
         result.push({

@@ -185,6 +185,10 @@ function handleChange() {
       store.mainActivityStart = customStart.value
       store.mainActivityEnd = customEnd.value
       break
+    case 'なし':
+      store.mainActivityStart = null
+      store.mainActivityEnd = null
+      break
   }
 }
 

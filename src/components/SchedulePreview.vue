@@ -180,7 +180,7 @@ function onReorder(evt) {
   // v-model="activities" により activities 配列はすでに並び替え済み
 
   // 1. 並び替え後の activities を store に反映
-  scheduleStore.setSchedule(activities.value)
+  scheduleStore.setSchedule(store.activities.value)
 
   // 2. 全スケジュールを再計算
   scheduleStore.recalculateSchedule()

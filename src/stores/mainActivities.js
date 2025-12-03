@@ -8,5 +8,7 @@ export const mainActivities = [
     { name: '夜勤帯②', defaultStart: '22:00', defaultEnd: '06:00' },
     { name: '休日', defaultStart: '', defaultEnd: '' },
     { name: 'カスタム', defaultStart: '', defaultEnd: '' },
+    { name: "なし", defaultStart: null, defaultEnd: null
+    },
   ]
   
