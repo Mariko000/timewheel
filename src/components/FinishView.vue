@@ -76,13 +76,14 @@ import { useRouter } from 'vue-router'
 const store = useScheduleStore()
 const router = useRouter()
 
-// 通知
+// 通知関連
+let swRegistration = null
 let reminderCheckTimer = null
 
-
+// -----------------
 // 時刻計算関数
+// -----------------
 function subtractMinutes(timeStr, minutes) {
-  // "HH:MM" -> Date 型に変換
   const [h, m] = timeStr.split(":").map(Number)
   const d = new Date()
   d.setHours(h)
@@ -92,171 +93,138 @@ function subtractMinutes(timeStr, minutes) {
   return `${hh}:${mm}`
 }
 
-
-//サービスワーカー
-async function sendNotification(message) {
-  if (!("serviceWorker" in navigator)) {
-    console.log("❌ Service Worker 未対応");
-    return;
+// -----------------
+// Service Worker 初期化
+// -----------------
+async function initServiceWorker() {
+  if (!('serviceWorker' in navigator)) {
+    console.log("❌ Service Worker 未対応")
+    return
   }
+  try {
+    swRegistration = await navigator.serviceWorker.ready
+    console.log("📦 Service Worker ready")
+  } catch (err) {
+    console.error("❌ SW ready 取得失敗:", err)
+  }
+}
 
-  const reg = await navigator.serviceWorker.ready;
-
-  reg.showNotification("TimeWheel 通知", {
+// -----------------
+// 安全な通知送信
+// -----------------
+function sendNotification(message) {
+  if (!swRegistration) {
+    console.warn("⚠️ SW not ready yet. Notification skipped:", message)
+    return
+  }
+  swRegistration.showNotification("TimeWheel 通知", {
     body: message,
     icon: "/web-app-manifest-192x192.png",
     badge: "/web-app-manifest-192x192.png"
-  });
-
-  console.log("📣 通知送信: ", message);
+  })
+  console.log("📣 通知送信:", message)
 }
 
-onMounted(() => {
-  const todayKey = new Date().toISOString().slice(0, 10)
-  store.loadSchedule(todayKey)
+// -----------------
+// リマインダー処理
+// -----------------
+function sendReminder(task) {
+  if (!task) return
+  sendNotification(`${task.activity} の時間です。`)
+}
 
-  if (!Array.isArray(store.schedule)) {
-    store.schedule = []
+function checkReminders() {
+  const now = new Date()
+  const current = now.toTimeString().slice(0,5)
+  store.schedule.forEach(item => {
+    if (!item || item.reminderOffset === "none") return
+    const reminderMoment = item._reminderTime ?? subtractMinutes(item.start, Number(item.reminderOffset))
+    if (!item.notified && reminderMoment <= current) {
+      sendReminder(item)
+      item.notified = true
+      store.saveSchedule()
+    }
+  })
+}
+
+// -----------------
+// 全体通知設定適用
+// -----------------
+function applyGlobalReminder() {
+  const offset = store.globalReminderOffset
+  store.schedule.forEach(item => {
+    item.reminderOffset = offset
+    item.notified = false
+    if (offset !== "none" && item.start) {
+      item._reminderTime = subtractMinutes(item.start, Number(offset))
+    }
+  })
+  store.saveSchedule()
+  console.log(offset === "none" ? "⏹ 全通知オフ" : `🔔 全タスク通知を "${offset}分前" に再設定`)
+}
+
+// -----------------
+// タスク完了切り替え
+// -----------------
+function toggleComplete(index) {
+  const item = store.schedule[index]
+  if (!item) return
+  item.completed = !item.completed
+  store.saveSchedule()
+  item.isGlowing = true
+  setTimeout(() => { item.isGlowing = false }, 800)
+}
+
+// -----------------
+// 完了ボタン処理
+// -----------------
+function finishTodos() {
+  if (!store.schedule || !store.schedule.length) return
+  const incomplete = store.schedule.filter(i => !i.completed)
+  if (incomplete.length > 0) {
+    const proceed = confirm(`まだ未完了のタスクが ${incomplete.length} 件あります。\nこのまま終了してよろしいですか？`)
+    if (!proceed) return
   }
+
+  store.schedule.forEach(i => { if (i.completed) i.isGlowing = true })
+  setTimeout(() => { store.schedule.forEach(i => { i.isGlowing = false }) }, 1000)
+
+  const completedCount = store.schedule.filter(i => i.completed).length
+  const rate = Math.round((completedCount / store.schedule.length) * 100)
+
+  setTimeout(() => {
+    store.schedule.forEach(i => { i.isGlowing = false })
+    router.push({ name: 'ResultView', params: { progressRate: rate } })
+  }, 2000)
+}
+
+// -----------------
+// コンポーネント初期化
+// -----------------
+onMounted(() => {
+  initServiceWorker()
+
+  const todayKey = new Date().toISOString().slice(0,10)
+  store.loadSchedule(todayKey)
+  if (!Array.isArray(store.schedule)) store.schedule = []
 
   store.schedule.forEach(item => {
     if (item.completed === undefined) item.completed = false
     item.isGlowing = false
-    if (item.reminderOffset === undefined) {
-      item.reminderOffset = store.globalReminderOffset // ← 代表値を初期値に
-    }
-    if (item.notified === undefined) {
-      item.notified = false
-    }
+    if (item.reminderOffset === undefined) item.reminderOffset = store.globalReminderOffset
+    if (item.notified === undefined) item.notified = false
   })
 
   store.saveSchedule(todayKey)
+
+  reminderCheckTimer = setInterval(checkReminders, 60*1000)
 })
-
-
-
-// タスククリック時の光アニメーション
-function toggleComplete(index) {
-  const item = store.schedule[index]
-  if (!item) return
-
-  item.completed = !item.completed
-  store.saveSchedule()
-
-  // タスク単位の光アニメーション
-  item.isGlowing = true
-  setTimeout(() => { item.isGlowing = false }, 800)   // 0.8秒で消える
-}
-
-onMounted(() => {
-  reminderCheckTimer = setInterval(checkReminders, 60 * 1000) // 1分ごと
-})
-//"none" が数値化されないようにする
-function checkReminders() {
-  const now = new Date();
-  const current = now.toTimeString().slice(0, 5);
-
-  store.schedule.forEach(item => {
-    if (!item || item.reminderOffset === "none") return;
-
-    const reminderMoment = item._reminderTime ?? subtractMinutes(item.start, Number(item.reminderOffset));
-
-    // ---- 修正ポイント ----
-    if (!item.notified && reminderMoment <= current) {
-      sendReminder(item);
-      item.notified = true;
-      store.saveSchedule();
-    }
-  });
-}
-
-
-//全体通知設定を一括で管理/全タスクに反映させる
-function applyGlobalReminder() {
-  const offset = store.globalReminderOffset;
-
-  // --- ① 全タスクに新しい通知設定を反映 ---
-  store.schedule.forEach(item => {
-    item.reminderOffset = offset;
-    item.notified = false; // 再通知できるようリセット
-  });
-
-  // --- ② 通知なしならここで終了 ---
-  if (offset === "none") {
-    console.log("⏹ 全通知オフ");
-    store.saveSchedule();
-    return;
-  }
-
-  // --- ③ 時間を計算し直す ---
-  store.schedule.forEach(item => {
-    if (!item.start) return;
-
-    const reminderMoment = subtractMinutes(item.start, Number(offset));
-
-    // タスクに計算済みの通知時間を保存
-    item._reminderTime = reminderMoment;
-  });
-
-  store.saveSchedule();
-
-  console.log(`🔔 全タスク通知を "${offset}分前" に再設定しました`);
-}
-
-
-//通知を表示する関数
-function sendReminder(task) {
-  if (!task) return;
-  sendNotification(`${task.activity} の時間です。`);
-}
-
-//FinishView を離れたら監視停止
 
 onUnmounted(() => {
   if (reminderCheckTimer) clearInterval(reminderCheckTimer)
 })
-
-
-// 完了ボタン押下時
-function finishTodos() {
-  if (!store.schedule || !store.schedule.length) return
-
-  // 未完了タスクをチェック
-  const incomplete = store.schedule.filter(item => !item.completed)
-  let proceed = true
-
-  if (incomplete.length > 0) {
-    // 確認ダイアログ
-    proceed = confirm(
-      `まだ未完了のタスクが ${incomplete.length} 件あります。\nこのまま終了してよろしいですか？`
-    )
-  }
-  if (!proceed) return
-
-  // ゴッドレイ風演出: 完了タスクを光らせる
-  store.schedule.forEach(item => {
-    if (item.completed) item.isGlowing = true
-  })
-
-  // 数百ms後に消す
-  setTimeout(() => {
-    store.schedule.forEach(item => { item.isGlowing = false })
-  }, 1000)
-
-  // 達成率計算
-  const completedCount = store.schedule.filter(item => item.completed).length
-  const rate = Math.round((completedCount / store.schedule.length) * 100)
-
-     // アニメーション待ってから遷移
-  setTimeout(() => {
-    // 光アニメーションを消す
-    store.schedule.forEach(item => { item.isGlowing = false })
-
-    // ResultView に遷移
-    router.push({ name: 'ResultView', params: { progressRate: rate } })
-  }, 2000)
-}
 </script>
+
 
 
 <style scoped>
