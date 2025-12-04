@@ -79,14 +79,21 @@ const router = useRouter()
 // 通知
 let reminderCheckTimer = null
 
-Notification.requestPermission().then(p => {
-  console.log("permission:", p)
-  new Notification("テスト", { body: "これ出たらForeground通知OK" });
-});
 
-// ------------------------------
-// 📌 フォアグラウンド通知テスト用
-// ------------------------------
+// 時刻計算関数
+function subtractMinutes(timeStr, minutes) {
+  // "HH:MM" -> Date 型に変換
+  const [h, m] = timeStr.split(":").map(Number)
+  const d = new Date()
+  d.setHours(h)
+  d.setMinutes(m - minutes)
+  const hh = String(d.getHours()).padStart(2,"0")
+  const mm = String(d.getMinutes()).padStart(2,"0")
+  return `${hh}:${mm}`
+}
+
+
+//サービスワーカー
 async function sendNotification(message) {
   if (!("serviceWorker" in navigator)) {
     console.log("❌ Service Worker 未対応");
@@ -103,43 +110,6 @@ async function sendNotification(message) {
 
   console.log("📣 通知送信: ", message);
 }
-
-
-  // 許可をまだ求めていない場合
-   // if (Notification.permission === "default") {
-   //   Notification.requestPermission().then(permission => {
-   //     console.log("通知許可:", permission);
-     //   if (permission === "granted") {
-      //    new Notification("🎉 通知がオンになりました！", {
-         //   body: "今後ここに通知が届きます。",
-        //  });
-       // }
-     // });
-   // }
-
-
-
-// 時刻計算関数
-function subtractMinutes(timeStr, minutes) {
-  // "HH:MM" -> Date 型に変換
-  const [h, m] = timeStr.split(":").map(Number)
-  const d = new Date()
-  d.setHours(h)
-  d.setMinutes(m - minutes)
-  const hh = String(d.getHours()).padStart(2,"0")
-  const mm = String(d.getMinutes()).padStart(2,"0")
-  return `${hh}:${mm}`
-}
-
-
-//一度だけ許可ダイアログ
-onMounted(() => {
-  if (Notification.permission === "default") {
-    Notification.requestPermission().then(result => {
-      console.log("通知許可:", result)
-    })
-  }
-})
 
 onMounted(() => {
   const todayKey = new Date().toISOString().slice(0, 10)
