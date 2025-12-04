@@ -11,8 +11,10 @@
                    <!-- 各タスクの完了済を「見た目上」消す（非表示）-->
 
                    <div v-if="store.schedule.length">
+                    <button @click="sendNotification('テスト通知です')">通知テスト</button>
 
-                                 <!-- リマインダーの時間選択 -->
+
+  <!-- リマインダーの時間選択 -->
 <!-- 全体通知設定（代表 select） -->
 <div class="global-reminder">
   <label>通知設定:</label>
@@ -173,23 +175,23 @@ onMounted(() => {
 })
 //"none" が数値化されないようにする
 function checkReminders() {
-  const now = new Date()
-  const current = now.toTimeString().slice(0, 5)
+  const now = new Date();
+  const current = now.toTimeString().slice(0, 5);
 
   store.schedule.forEach(item => {
-    // 💡 ここ追加：通知しないならスキップ
-    if (!item || item.reminderOffset === "none") return
+    if (!item || item.reminderOffset === "none") return;
 
     const reminderMoment = item._reminderTime ?? subtractMinutes(item.start, Number(item.reminderOffset));
 
-
-    if (!item.notified && reminderMoment === current) {
-      sendReminder(item)
-      item.notified = true
-      store.saveSchedule()
+    // ---- 修正ポイント ----
+    if (!item.notified && reminderMoment <= current) {
+      sendReminder(item);
+      item.notified = true;
+      store.saveSchedule();
     }
-  })
+  });
 }
+
 
 //全体通知設定を一括で管理/全タスクに反映させる
 function applyGlobalReminder() {
