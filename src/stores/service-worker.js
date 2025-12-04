@@ -1,3 +1,8 @@
+//SW 更新検知用コード 古い SW が残るの防止
+self.addEventListener("install", (event) => {
+    self.skipWaiting();
+  });
+
 //キャッシュ登録
 const cacheName = "timewheel-cache-v2";
 const assetsToCache = [
