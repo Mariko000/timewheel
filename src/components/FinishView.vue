@@ -92,7 +92,6 @@ function sendNotification(message = "🔔 通知テスト") {
   if (Notification.permission === "granted") {
     new Notification("TimeWheel 通知", {
       body: message,
-      icon: "/icons/icon-192x192.png"
     });
     return;
   }
