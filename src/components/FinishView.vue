@@ -79,6 +79,11 @@ const router = useRouter()
 // 通知
 let reminderCheckTimer = null
 
+Notification.requestPermission().then(p => {
+  console.log("permission:", p)
+  new Notification("テスト", { body: "これ出たらForeground通知OK" });
+});
+
 // ------------------------------
 // 📌 フォアグラウンド通知テスト用
 // ------------------------------
