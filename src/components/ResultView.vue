@@ -156,11 +156,11 @@ function saveDailyScore() {
 
 // 1週間データページへ遷移
 function goToWeekData() {
-  router.push('/WeekData')
+  router.push({ name: 'WeekData' })
 }
 // トップに戻る
 function goBack() {
-  router.push('/')
+  router.push({ name: 'OpeningAnimation' })
 }
 </script>
 
