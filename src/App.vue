@@ -6,6 +6,7 @@
 <script setup>
 import './page_design.css'
 
+// 全てのリマインダー・通知・SW管理
 //Notification API 初回アプリ起動時に通知の権限をリクエスト
 //main.js だと Vue がまだ完全に mount される前に動くのでここに
 
@@ -30,9 +31,21 @@ async function initServiceWorker() {
   }
 }
 
-// -----------------
+// 時刻計算関数
+
+function subtractMinutes(timeStr, minutes) {
+  const [h, m] = timeStr.split(":").map(Number)
+  const d = new Date()
+  d.setHours(h)
+  d.setMinutes(m - minutes)
+  const hh = String(d.getHours()).padStart(2,"0")
+  const mm = String(d.getMinutes()).padStart(2,"0")
+  return `${hh}:${mm}`
+}
+
+
 // 安全な通知送信
-// -----------------
+
 function sendNotification(message) {
   if (!swRegistration.value) {
     console.warn("⚠️ SW not ready yet. Notification skipped:", message)
@@ -46,32 +59,36 @@ function sendNotification(message) {
   console.log("📣 通知送信:", message)
 }
 
-// -----------------
-// 時刻計算
-// -----------------
-function subtractMinutes(timeStr, minutes) {
-  const [h, m] = timeStr.split(":").map(Number)
-  const d = new Date()
-  d.setHours(h)
-  d.setMinutes(m - minutes)
-  return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`
-}
+
 
 // -----------------
 // リマインダー処理
 // -----------------
+function computeReminderTime(task) {
+  if (task.reminderOffset === "none" || !task.start) return null
+  const [h, m] = task.start.split(":").map(Number)
+  const date = new Date()
+  date.setHours(h)
+  date.setMinutes(m)
+  date.setSeconds(0)
+  date.setMilliseconds(0)
+  date.setMinutes(date.getMinutes() - Number(task.reminderOffset))
+  return date
+}
+
 function checkReminders() {
-  const now = new Date().toTimeString().slice(0,5)
-  store.schedule.forEach(task => {
-    if (!task || task.reminderOffset === "none") return
-    const reminderTime = task._reminderTime ?? subtractMinutes(task.start, Number(task.reminderOffset))
-    if (!task.notified && reminderTime <= now) {
-      sendNotification(`${task.activity} の時間です。`)
-      task.notified = true
+  const now = new Date()
+  store.schedule.forEach(item => {
+    if (!item || item.reminderOffset === "none") return
+    if (!item._reminderTime) item._reminderTime = computeReminderTime(item)
+    if (!item.notified && item._reminderTime <= now) {
+      sendReminder(item)
+      item.notified = true
       store.saveSchedule()
     }
   })
 }
+
 
 // -----------------
 // 全体通知設定適用
@@ -92,8 +109,8 @@ function applyGlobalReminder() {
 // -----------------
 // 初期化
 // -----------------
-onMounted(() => {
-  initServiceWorker()
+onMounted(async () => {
+  await initServiceWorker()   // ここで SW ready を待つ
 
   // 通知権限リクエスト
   if ('Notification' in window) {
@@ -113,8 +130,8 @@ onMounted(() => {
   })
   store.saveSchedule(todayKey)
 
-  // 1分ごとにリマインダーをチェック
-  reminderCheckTimer = setInterval(checkReminders, 60*1000)
+  // SW アクティブ後にリマインダーを開始 1分ごとにリマインダーをチェック
+    reminderCheckTimer = setInterval(checkReminders, 60*1000)
 })
 
 onUnmounted(() => {
