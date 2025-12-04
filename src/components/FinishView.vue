@@ -87,32 +87,36 @@ Notification.requestPermission().then(p => {
 // ------------------------------
 // 📌 フォアグラウンド通知テスト用
 // ------------------------------
-function sendNotification(message = "🔔 通知テスト") {
-  if (!("Notification" in window)) {
-    console.log("❌ このブラウザは通知未対応");
+async function sendNotification(message) {
+  if (!("serviceWorker" in navigator)) {
+    console.log("❌ Service Worker 未対応");
     return;
   }
 
-  // すでに許可されている場合
-  if (Notification.permission === "granted") {
-    new Notification("TimeWheel 通知", {
-      body: message,
-    });
-    return;
-  }
+  const reg = await navigator.serviceWorker.ready;
+
+  reg.showNotification("TimeWheel 通知", {
+    body: message,
+    icon: "/web-app-manifest-192x192.png",
+    badge: "/web-app-manifest-192x192.png"
+  });
+
+  console.log("📣 通知送信: ", message);
+}
+
 
   // 許可をまだ求めていない場合
-  if (Notification.permission === "default") {
-    Notification.requestPermission().then(permission => {
-      console.log("通知許可:", permission);
-      if (permission === "granted") {
-        new Notification("🎉 通知がオンになりました！", {
-          body: "今後ここに通知が届きます。",
-        });
-      }
-    });
-  }
-}
+   // if (Notification.permission === "default") {
+   //   Notification.requestPermission().then(permission => {
+   //     console.log("通知許可:", permission);
+     //   if (permission === "granted") {
+      //    new Notification("🎉 通知がオンになりました！", {
+         //   body: "今後ここに通知が届きます。",
+        //  });
+       // }
+     // });
+   // }
+
 
 
 // 時刻計算関数

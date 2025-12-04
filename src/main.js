@@ -26,6 +26,16 @@ export const { updateServiceWorker } = useRegisterSW({
     }
   })
 
+//Service Worker 登録コードを追加
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/service-worker.js").then(reg => {
+        console.log("📦 Service Worker registered:", reg);
+      });
+    });
+  }
+  
+
 app.use(createPinia())
 app.use(router)
 app.mount('#app')
