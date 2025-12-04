@@ -11,7 +11,7 @@
                    <!-- 各タスクの完了済を「見た目上」消す（非表示）-->
 
                    <div v-if="store.schedule.length">
-                    <button @click="sendNotification('テスト通知です')">通知テスト</button>
+                    <button @click="testNotification">通知テスト</button>
 
 
   <!-- リマインダーの時間選択 -->
@@ -77,8 +77,9 @@ const store = useScheduleStore()
 const router = useRouter()
 
 // 通知関連
-let swRegistration = null
+
 let reminderCheckTimer = null
+
 
 // -----------------
 // 時刻計算関数
@@ -93,63 +94,10 @@ function subtractMinutes(timeStr, minutes) {
   return `${hh}:${mm}`
 }
 
-// -----------------
-// Service Worker 初期化
-// -----------------
-async function initServiceWorker() {
-  if (!('serviceWorker' in navigator)) {
-    console.log("❌ Service Worker 未対応")
-    return
-  }
-  try {
-    swRegistration = await navigator.serviceWorker.ready
-    console.log("📦 Service Worker ready")
-  } catch (err) {
-    console.error("❌ SW ready 取得失敗:", err)
-  }
-}
 
-// -----------------
-// 安全な通知送信
-// -----------------
-function sendNotification(message) {
-  if (!swRegistration) {
-    console.warn("⚠️ SW not ready yet. Notification skipped:", message)
-    return
-  }
-  swRegistration.showNotification("TimeWheel 通知", {
-    body: message,
-    icon: "/web-app-manifest-192x192.png",
-    badge: "/web-app-manifest-192x192.png"
-  })
-  console.log("📣 通知送信:", message)
-}
-
-// -----------------
-// リマインダー処理
-// -----------------
-function sendReminder(task) {
-  if (!task) return
-  sendNotification(`${task.activity} の時間です。`)
-}
-
-function checkReminders() {
-  const now = new Date()
-  const current = now.toTimeString().slice(0,5)
-  store.schedule.forEach(item => {
-    if (!item || item.reminderOffset === "none") return
-    const reminderMoment = item._reminderTime ?? subtractMinutes(item.start, Number(item.reminderOffset))
-    if (!item.notified && reminderMoment <= current) {
-      sendReminder(item)
-      item.notified = true
-      store.saveSchedule()
-    }
-  })
-}
-
-// -----------------
+//
 // 全体通知設定適用
-// -----------------
+
 function applyGlobalReminder() {
   const offset = store.globalReminderOffset
   store.schedule.forEach(item => {
