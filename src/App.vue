@@ -1,4 +1,5 @@
 <template>
+  <!-- force rebuild -->
   <!-- 後で導入予定 -->
   <router-view />
 </template>
