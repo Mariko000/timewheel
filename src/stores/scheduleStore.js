@@ -516,7 +516,23 @@ function loadSchedule(dateKey=new Date().toISOString().slice(0,10)){
       console.log('🧹 schedule reset complete')
     }
     
-    
+    // ===== 🧯互換用: 古いコードで呼ばれても落ちない =====
+function setSchedule(data) {
+  console.warn("⚠️ Deprecated function 'setSchedule' was called.", data)
+
+  if (Array.isArray(data)) {
+    schedule.value = data.map(item => ({
+      ...item,
+      id: item.id || crypto.randomUUID(),
+      duration: toMinutes(item.end) - toMinutes(item.start)
+    }))
+  } else {
+    console.warn("⚠️ setSchedule expected array but received:", data)
+  }
+
+  schedule.value = [...schedule.value] // reactivity refresh
+}
+
 
   return {
     setActivities,
@@ -533,7 +549,8 @@ function loadSchedule(dateKey=new Date().toISOString().slice(0,10)){
     toMinutes, toTimeString, breakStyle,
     removeSlot, oversleepAlert,
     loadSchedule,
-    scheduleHistory
+    scheduleHistory,
+    setSchedule
   }
 
 });
