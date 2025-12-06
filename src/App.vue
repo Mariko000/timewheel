@@ -9,8 +9,8 @@ import './page_design.css'
 // 全てのリマインダー・通知・SW管理
 //Notification API 初回アプリ起動時に通知の権限をリクエスト
 //main.js だと Vue がまだ完全に mount される前に動くのでここに
+//Service Worker はブラウザに直接登録されるファイルなので、import する必要がない
 
-import './page_design.css'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useScheduleStore } from '@/stores/scheduleStore'
 import { subtractMinutes } from '@/stores/time.js'
@@ -24,18 +24,23 @@ let reminderCheckTimer = null
 // -----------------
 async function initServiceWorker() {
   if (!('serviceWorker' in navigator)) return
+
   try {
+    // SW登録
+    await navigator.serviceWorker.register('/service-worker.js')
+    console.log('SW registered')
+
+    // ready を待って swRegistration に格納
     swRegistration.value = await navigator.serviceWorker.ready
-    console.log("📦 Service Worker ready")
+    console.log('SW ready:', swRegistration.value)
   } catch (err) {
-    console.error("❌ SW ready 取得失敗:", err)
+    console.error('SW registration failed:', err)
   }
 }
 
-
-
+// -----------------
 // 安全な通知送信
-
+// -----------------
 function sendNotification(message) {
   if (!swRegistration.value) {
     console.warn("⚠️ SW not ready yet. Notification skipped:", message)
@@ -48,8 +53,6 @@ function sendNotification(message) {
   })
   console.log("📣 通知送信:", message)
 }
-
-
 
 // -----------------
 // リマインダー処理
@@ -72,13 +75,12 @@ function checkReminders() {
     if (!item || item.reminderOffset === "none") return
     if (!item._reminderTime) item._reminderTime = computeReminderTime(item)
     if (!item.notified && item._reminderTime <= now) {
-      sendReminder(item)
+      sendNotification(item.activity)  // sendReminder → sendNotification に統一
       item.notified = true
       store.saveSchedule()
     }
   })
 }
-
 
 // -----------------
 // 全体通知設定適用
@@ -100,14 +102,14 @@ function applyGlobalReminder() {
 // 初期化
 // -----------------
 onMounted(async () => {
-  await initServiceWorker()   // ここで SW ready を待つ
+  await initServiceWorker()   // SW登録・ready を待つ
 
   // 通知権限リクエスト
   if ('Notification' in window) {
     Notification.requestPermission().then(result => console.log("通知権限:", result))
   }
 
-  // store の初期化
+  // store 初期化
   const todayKey = new Date().toISOString().slice(0,10)
   store.loadSchedule(todayKey)
   if (!Array.isArray(store.schedule)) store.schedule = []
@@ -120,8 +122,8 @@ onMounted(async () => {
   })
   store.saveSchedule(todayKey)
 
-  // SW アクティブ後にリマインダーを開始 1分ごとにリマインダーをチェック
-    reminderCheckTimer = setInterval(checkReminders, 60*1000)
+  // リマインダー開始（1分ごと）
+  reminderCheckTimer = setInterval(checkReminders, 60*1000)
 })
 
 onUnmounted(() => {
