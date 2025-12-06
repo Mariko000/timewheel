@@ -124,16 +124,11 @@ function applyGlobalReminder() {
   store.schedule.forEach(item => {
     item.reminderOffset = offset
     item.notified = false
-    if (offset !== "none" && item.start) {
-      item._reminderTime = subtractMinutes(item.start, Number(offset))
-    }
+    item._reminderTime = offset !== "none" && item.start ? subtractMinutes(item.start, Number(offset)) : null
   })
   store.saveSchedule()
-  console.log(offset === "none" ? "⏹ 全通知オフ" : `🔔 全タスク通知を "${offset}分前" に再設定`)
+  console.log(offset === "none" ? "⏹ 全通知オフ" : `🔔 全タスク通知を ${offset}分前 に再設定`)
 }
-onUnmounted(() => {
-  if (reminderCheckTimer) clearInterval(reminderCheckTimer)
-})
 </script>
 
 
