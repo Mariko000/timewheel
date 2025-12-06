@@ -92,8 +92,8 @@ function applyGlobalReminder() {
     if (item.start) item._reminderTime = offset !== "none" ? subtractMinutes(item.start, Number(offset)) : null
   })
   store.saveSchedule()
-  console.log(offset === "none" ? "⏹ 全通知オフ" : `🔔 全タスク通知を ${offset}分前 に再設定`)
 }
+
 
 // -----------------
 // 初期化
