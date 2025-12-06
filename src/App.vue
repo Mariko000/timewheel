@@ -13,6 +13,7 @@ import './page_design.css'
 import './page_design.css'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useScheduleStore } from '@/stores/scheduleStore'
+import { subtractMinutes } from '@/stores/time.js'
 
 const store = useScheduleStore()
 const swRegistration = ref(null)
@@ -31,17 +32,6 @@ async function initServiceWorker() {
   }
 }
 
-// 時刻計算関数
-
-function subtractMinutes(timeStr, minutes) {
-  const [h, m] = timeStr.split(":").map(Number)
-  const d = new Date()
-  d.setHours(h)
-  d.setMinutes(m - minutes)
-  const hh = String(d.getHours()).padStart(2,"0")
-  const mm = String(d.getMinutes()).padStart(2,"0")
-  return `${hh}:${mm}`
-}
 
 
 // 安全な通知送信

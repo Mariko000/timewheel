@@ -72,6 +72,7 @@
 import { onMounted, onUnmounted } from 'vue'
 import { useScheduleStore } from '@/stores/scheduleStore'
 import { useRouter } from 'vue-router'
+import { subtractMinutes } from '@/stores/time.js'
 
 const store = useScheduleStore()
 const router = useRouter()
@@ -80,21 +81,6 @@ const router = useRouter()
 
 let reminderCheckTimer = null
 
-
-// 全体通知設定適用
-
-function applyGlobalReminder() {
-  const offset = store.globalReminderOffset
-  store.schedule.forEach(item => {
-    item.reminderOffset = offset
-    item.notified = false
-    if (offset !== "none" && item.start) {
-      item._reminderTime = subtractMinutes(item.start, Number(offset))
-    }
-  })
-  store.saveSchedule()
-  console.log(offset === "none" ? "⏹ 全通知オフ" : `🔔 全タスク通知を "${offset}分前" に再設定`)
-}
 
 // -----------------
 // タスク完了切り替え
@@ -131,28 +117,20 @@ function finishTodos() {
   }, 2000)
 }
 
-// -----------------
-// コンポーネント初期化
-// -----------------
-onMounted(() => {
-  initServiceWorker()
-
-  const todayKey = new Date().toISOString().slice(0,10)
-  store.loadSchedule(todayKey)
-  if (!Array.isArray(store.schedule)) store.schedule = []
-
+//全体の offset を変えるだけ
+// applyGlobalReminder 内で使用
+function applyGlobalReminder() {
+  const offset = store.globalReminderOffset
   store.schedule.forEach(item => {
-    if (item.completed === undefined) item.completed = false
-    item.isGlowing = false
-    if (item.reminderOffset === undefined) item.reminderOffset = store.globalReminderOffset
-    if (item.notified === undefined) item.notified = false
+    item.reminderOffset = offset
+    item.notified = false
+    if (offset !== "none" && item.start) {
+      item._reminderTime = subtractMinutes(item.start, Number(offset))
+    }
   })
-
-  store.saveSchedule(todayKey)
-
-  reminderCheckTimer = setInterval(checkReminders, 60*1000)
-})
-
+  store.saveSchedule()
+  console.log(offset === "none" ? "⏹ 全通知オフ" : `🔔 全タスク通知を "${offset}分前" に再設定`)
+}
 onUnmounted(() => {
   if (reminderCheckTimer) clearInterval(reminderCheckTimer)
 })
