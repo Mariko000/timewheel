@@ -62,15 +62,23 @@ function computeReminderTime(task) {
 // -----------------
 function checkReminders() {
   const now = new Date()
+  let modified = false
   store.schedule.forEach(item => {
     if (!item || item.reminderOffset === "none") return
-    if (!item._reminderTime) item._reminderTime = computeReminderTime(item)
+
+    if (!item._reminderTime && item.start) {
+      item._reminderTime = computeReminderTime(item)
+      modified = true
+    }
+
     if (!item.notified && item._reminderTime && item._reminderTime <= now) {
       sendNotification(item.activity)
       item.notified = true
+      modified = true
     }
   })
-  store.saveSchedule()
+
+  if (modified) store.saveSchedule()
 }
 
 // -----------------
@@ -81,7 +89,7 @@ function applyGlobalReminder() {
   store.schedule.forEach(item => {
     item.reminderOffset = offset
     item.notified = false
-    item._reminderTime = offset !== "none" && item.start ? subtractMinutes(item.start, Number(offset)) : null
+    if (item.start) item._reminderTime = offset !== "none" ? subtractMinutes(item.start, Number(offset)) : null
   })
   store.saveSchedule()
   console.log(offset === "none" ? "⏹ 全通知オフ" : `🔔 全タスク通知を ${offset}分前 に再設定`)
@@ -105,11 +113,14 @@ onMounted(async () => {
     if (item.completed === undefined) item.completed = false
     if (item.reminderOffset === undefined) item.reminderOffset = store.globalReminderOffset
     if (item.notified === undefined) item.notified = false
-    item._reminderTime = item.start ? subtractMinutes(item.start, Number(item.reminderOffset)) : null
+    if (item.start) item._reminderTime = subtractMinutes(item.start, Number(item.reminderOffset))
   })
   store.saveSchedule(todayKey)
 
-  reminderCheckTimer = setInterval(checkReminders, 60*1000)
+  // 少し遅らせて setInterval 開始
+  setTimeout(() => {
+    reminderCheckTimer = setInterval(checkReminders, 60*1000)
+  }, 500)
 })
 
 onUnmounted(() => {

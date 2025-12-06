@@ -69,7 +69,6 @@
 </template>
   
 <script setup>
-import { onMounted, onUnmounted } from 'vue'
 import { useScheduleStore } from '@/stores/scheduleStore'
 import { useRouter } from 'vue-router'
 
@@ -106,7 +105,7 @@ function finishTodos() {
   }
 
   store.schedule.forEach(i => { if (i.completed) i.isGlowing = true })
-  setTimeout(() => { store.schedule.forEach(i => { i.isGlowing = false }) }, 1000)
+ 
 
   const completedCount = store.schedule.filter(i => i.completed).length
   const rate = Math.round((completedCount / store.schedule.length) * 100)
@@ -129,9 +128,6 @@ function applyGlobalReminder() {
 }
 
 
-onUnmounted(() => {
-  if (reminderCheckTimer) clearInterval(reminderCheckTimer)
-})
 </script>
 
 
