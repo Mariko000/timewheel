@@ -72,7 +72,7 @@
 import { onMounted, onUnmounted } from 'vue'
 import { useScheduleStore } from '@/stores/scheduleStore'
 import { useRouter } from 'vue-router'
-import { subtractMinutes } from '@/stores/time.js'
+
 
 const store = useScheduleStore()
 const router = useRouter()
@@ -118,17 +118,20 @@ function finishTodos() {
 }
 
 //全体の offset を変えるだけ
-// applyGlobalReminder 内で使用
 function applyGlobalReminder() {
   const offset = store.globalReminderOffset
   store.schedule.forEach(item => {
     item.reminderOffset = offset
     item.notified = false
-    item._reminderTime = offset !== "none" && item.start ? subtractMinutes(item.start, Number(offset)) : null
   })
   store.saveSchedule()
-  console.log(offset === "none" ? "⏹ 全通知オフ" : `🔔 全タスク通知を ${offset}分前 に再設定`)
+  console.log(offset === "none" ? "⏹ 全通知オフ" : `🔔 全タスク通知を "${offset}分前" に再設定`)
 }
+
+
+onUnmounted(() => {
+  if (reminderCheckTimer) clearInterval(reminderCheckTimer)
+})
 </script>
 
 
