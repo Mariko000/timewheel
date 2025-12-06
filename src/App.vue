@@ -24,15 +24,10 @@ let reminderCheckTimer = null
 // -----------------
 async function initServiceWorker() {
   if (!('serviceWorker' in navigator)) return
-
   try {
-    // SW登録
-    await navigator.serviceWorker.register('/service-worker.js')
-    console.log('SW registered')
-
-    // ready を待って swRegistration に格納
-    swRegistration.value = await navigator.serviceWorker.ready
-    console.log('SW ready:', swRegistration.value)
+    const reg = await navigator.serviceWorker.register('/service-worker.js')
+    swRegistration.value = reg       // ← ここで登録結果を保存
+    console.log('SW registered:', reg)
   } catch (err) {
     console.error('SW registration failed:', err)
   }
