@@ -7,25 +7,12 @@
            <CardLayout>
           <div class="galaxy-card schedule-preview view-mode">
             <h3 class="text-glow">本日のスケジュール（Todoリスト）</h3>
+              <div v-if="store.schedule.length">
+              <!--<button @click="testNotification">通知テスト</button>-->
+              <!-- Todoコピー/ダウンロードボタン -->
+              
+              <button class="btn-copy" @click="copyTodo">コピー</button>
 
-                   <!-- 各タスクの完了済を「見た目上」消す（非表示）-->
-
-                   <div v-if="store.schedule.length">
-                    <button @click="testNotification">通知テスト</button>
-
-
-  <!-- リマインダーの時間選択 -->
-<!-- 全体通知設定（代表 select） -->
-<div class="global-reminder">
-  <label>通知設定:</label>
-  <select v-model="store.globalReminderOffset" @change="applyGlobalReminder">
-    <option value="none">通知しない</option>
-    <option value="0">時間ちょうど</option>
-    <option value="5">5分前</option>
-    <option value="10">10分前</option>
-    <option value="15">15分前</option>
-  </select>
-</div>
                   <div
                    v-for="(element, index) in store.schedule"
                    :key="element.id"
@@ -80,6 +67,17 @@ const router = useRouter()
 
 let reminderCheckTimer = null
 
+// クリップボードにコピー
+function copyTodo() {
+  const text = store.schedule
+    .map(item => `${item.activity}\n${item.start}〜${item.end}`)
+    .join("\n");
+
+  navigator.clipboard.writeText(text)
+    .then(() => alert("コピーしました！"))
+    .catch(() => alert("コピーできませんでした。"));
+}
+
 
 // -----------------
 // タスク完了切り替え
@@ -115,18 +113,6 @@ function finishTodos() {
     router.push({ name: 'ResultView', params: { progressRate: rate } })
   }, 2000)
 }
-
-//全体の offset を変えるだけ
-function applyGlobalReminder() {
-  const offset = store.globalReminderOffset
-  store.schedule.forEach(item => {
-    item.reminderOffset = offset
-    item.notified = false
-  })
-  store.saveSchedule()
-  console.log(offset === "none" ? "⏹ 全通知オフ" : `🔔 全タスク通知を "${offset}分前" に再設定`)
-}
-
 
 </script>
 

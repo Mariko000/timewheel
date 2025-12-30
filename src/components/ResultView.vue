@@ -214,24 +214,30 @@ function goBack() {
 .avatar-message-wrapper {
   position: relative;
   display: flex;
-  justify-content: center; /* アバターを中央寄せ */
-  align-items: center; /* 垂直方向も中央に */
-  min-height: 100px; /* アバターと吹き出しのための最低限の高さを確保 */
+  justify-content: center;
+  align-items: center;
+  /* min-height: 100px; ← 削除 or 小さく */
 }
+
 
 
 .reaction-front {
 
   /* 位置調整を相対的に行う */
   position: absolute; 
-  left: 55%; /* 🔥 アバターの右側に配置するための調整 */
-  top: 50%; /* 🔥 垂直方向の調整 */
+  left: 60%; /* 🔥 アバターの右側に配置するための調整 */
+  top: 40%; /* 🔥 垂直方向の調整 */
   transform: translate(-50%, -50%); /* 中央寄せ */
   z-index: 999;
   color: #000;
-    /* 🔥 サイズ調整 */
-  font-size: 1rem; /*文字サイズアップ */
+  font-size: 1rem; /*文字サイズ */
 
+}
+
+/* ブラウザ標準のマージン調整 scoped CSS へ届けるため */
+.reaction-front :deep(.speech-bubble p){
+  margin: 0;
+  line-height: 1.4;
 }
 
 .back-btn {

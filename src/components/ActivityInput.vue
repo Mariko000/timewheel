@@ -51,7 +51,7 @@
     </div>
 
     <!-- 保存ボタン -->
-    <button @click="saveAndReturn" class="btn-neon">
+    <button @click="saveAndReturn" class="btn-neon" id="save">
       スケジュールに反映して次へ
     </button>
 
@@ -73,10 +73,10 @@
 
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch,  nextTick, inject  } from 'vue'
 import { useScheduleStore } from '@/stores/scheduleStore'
 import { useRouter } from 'vue-router'
-import { nextTick } from "vue";
+
 
 
 
@@ -84,6 +84,39 @@ import { nextTick } from "vue";
 const router = useRouter()
 const store = useScheduleStore()
 const newActivity = ref('')
+
+// チュートリアル
+import { useTutorial } from '@/composables/useTutorial'
+import { getActivityInputSteps } from '@/composables/useTutorialSteps'
+import { isTutorialDone, markTutorialDoneFor } from '@/components/Tutorial/tutorialProgress'
+
+
+const tutorial = useTutorial(2000)
+const isFirstTutorial = inject('isFirstTutorial', ref(false))
+
+watch(
+  isFirstTutorial,
+  async (val) => {
+    if (!val) return
+    if (isTutorialDone('activityInput')) return
+
+    console.log('ActivityInput: チュートリアル開始')
+
+    await nextTick()
+    tutorial.start(getActivityInputSteps())
+
+    markTutorialDoneFor('activityInput')
+  },
+  { immediate: true }
+)
+
+// onMounted(() => {
+  // // 3. 判定が true の場合のみ開始する
+ //  if (isFirstTutorial) {
+  // tutorial.start(getActivityInputSteps())
+// }
+// })
+
 
 //リアクション用の ref と watch を定義
 const avatarMood = ref("normal")

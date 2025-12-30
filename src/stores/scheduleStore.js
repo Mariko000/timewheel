@@ -147,17 +147,40 @@ function getMainActivityBlock() {
     } else {
 
         // 「なし」「カスタム」の場合 → 朝準備/朝食のあとすぐ活動を埋める
-  if (mainActivity.value === "なし" || mainActivity.value === "カスタム") {
-    fillSlot(result, current, endDay, acts, "free")
-
-    // 最後に夕方ルーチンを強制挿入
-    const eveningPrepStart = toMinutes(sleepTime.value) - 45 // (15分準備 + 30分夕食)
-    result.push({ start: toTimeString(eveningPrepStart), end: toTimeString(eveningPrepStart + 15), activity:"夕方準備" })
-    result.push({ start: toTimeString(eveningPrepStart + 15), end: toTimeString(eveningPrepStart + 45), activity:"夕食" })
-
-    schedule.value = result
-    return
-  }
+        if (mainActivity.value === "なし" || mainActivity.value === "カスタム" || mainActivity.value === "自由") {
+  
+          const eveningPrep = toMinutes("17:00");
+          const dinner = toMinutes("17:15"); // 夕方準備15分
+        
+          // ① 夕方前の空き時間を埋める
+          if (current < eveningPrep) {
+            fillSlot(result, current, eveningPrep, acts, "free");
+          }
+        
+          // ② 夕方ルーチンを固定配置
+          result.push({
+            start: toTimeString(eveningPrep),
+            end: toTimeString(eveningPrep + 15),
+            activity: "夕方準備"
+          });
+        
+          result.push({
+            start: toTimeString(dinner),
+            end: toTimeString(dinner + 30),
+            activity: "夕食"
+          });
+        
+          current = dinner + 30;
+        
+          // ③ 夜の残り時間を埋める
+          if (current < endDay) {
+            fillSlot(result, current, endDay, acts, "evening");
+          }
+        
+          schedule.value = result;
+          return;
+        }
+        
         // 通勤／通学
       let commuteLabel = null
       if (mainActivity.value === "学校") commuteLabel = "通学"
@@ -296,6 +319,7 @@ function getMainActivityBlock() {
       // 元の duration を保持
       const duration = toMinutes(item.end) - toMinutes(item.start);
   
+      // 時間を再計算
       const start = `${String(currentHour).padStart(2, '0')}:${String(currentMin).padStart(2, '0')}`;
       const endTotal = currentHour * 60 + currentMin + duration;
       const endHour = Math.floor(endTotal / 60);
@@ -309,9 +333,13 @@ function getMainActivityBlock() {
       return { ...item, start, end };
     });
   
-    // computed 再評価のためにコピーして代入
+    // computed のための再代入
     schedule.value = [...schedule.value];
+  
+    // ⬇⬇⬇ ここに追加 ⬇⬇⬇
+    saveSchedule();
   }
+  
 
 
 
@@ -550,7 +578,8 @@ function setSchedule(data) {
     removeSlot, oversleepAlert,
     loadSchedule,
     scheduleHistory,
-    setSchedule
+    setSchedule,
+    recalculateSchedule
   }
 
 });

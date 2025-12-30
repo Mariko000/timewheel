@@ -15,6 +15,7 @@
         class="btn-outline"
         :class="{ active: viewMode === 'wheel' }"
         @click="viewMode = 'wheel'"
+        id="wheel_schedule"
       >
         ホイール型
       </button>
@@ -22,6 +23,7 @@
         class="btn-outline"
         :class="{ active: viewMode === 'list' }"
         @click="viewMode = 'list'"
+        id="list_schedule"
       >
         ノート型
       </button>
@@ -96,15 +98,15 @@
     <div class="button-row">
       <button @click="goBack" class="btn-outline back-btn">戻る</button>
       <button @click="confirmSchedule" class="btn-neon confirm-btn">確定</button>
-       <!-- リセット -->
-      <button @click="resetSchedule" class="btn-outline reset-btn">🗑️</button>
+       <!-- リセット 
+      <button @click="resetSchedule" class="btn-outline reset-btn">🗑️</button>-->
     </div>
   </div>
   </CardLayout>
 </template>
 
 <script setup>
-import { ref, onMounted, onUpdated, watch, nextTick } from 'vue'
+import { ref, onMounted, onUpdated, watch, nextTick, inject } from 'vue'
 import { useScheduleStore } from '@/stores/scheduleStore'
 import { useRouter } from 'vue-router'
 import draggable from 'vuedraggable'
@@ -142,6 +144,39 @@ onMounted(async () => {
   renderChart()
 })
 
+//チュートリアル
+import { useTutorial } from '@/composables/useTutorial'
+import { getSchedulePreviewSteps } from '@/composables/useTutorialSteps'
+import { isTutorialDone, markTutorialDoneFor } from '@/components/Tutorial/tutorialProgress'
+//const isFirstTutorial = inject('isFirstTutorial', false)
+const isFirstTutorial = inject('isFirstTutorial', ref(false))
+const tutorial = useTutorial(2000)
+
+watch(
+  isFirstTutorial,
+  async (val) => {
+    if (!val) return
+    if (isTutorialDone('schedulePreview')) return
+
+    console.log('SchedulePreview: チュートリアル開始')
+
+    await nextTick()
+    tutorial.start(getSchedulePreviewSteps())
+
+    markTutorialDoneFor('schedulePreview')
+  },
+  { immediate: true }
+)
+
+//onMounted(() => {
+    // 3. 判定が true の場合のみ開始する
+   // if (isFirstTutorial) {
+  //tutorial.start(getSchedulePreviewSteps())
+//}
+//})
+
+
+
 
 // --- 編集モード切替 ---
 function toggleEditMode() {
@@ -175,15 +210,17 @@ function updateTime(id, field, value) {
 
 // --- ドラッグ後再計算 ---
 
-function onReorder(evt) {
-  // evt.moved.element がドラッグされた要素  
-  // v-model="activities" により activities 配列はすでに並び替え済み
+function onReorder() {
+  // 並び替え後の schedule は v-model により既に更新済みなので
+  // store へ保存だけすれば十分
+  scheduleStore.saveSchedule()
 
-  // 1. 並び替え後の activities を store に反映
-  scheduleStore.setSchedule(store.activities.value)
+  // 長さや順序に応じて時刻を再生成
+  if (typeof scheduleStore.recalculateSchedule === "function") {
+    scheduleStore.recalculateSchedule()
+  }
 
-  // 2. 全スケジュールを再計算
-  scheduleStore.recalculateSchedule()
+  console.log("✔ 並び替え → 保存 → 再計算 完了")
 }
 
 
@@ -267,15 +304,17 @@ function renderChart() {
       circumference:360,
       cutout:'50%',
       plugins:{
-        legend:{ position:'bottom', labels:{ boxWidth:20, padding:15 }},
-        tooltip:{
-          callbacks:{
-            label:ctx=>{
-              const dur = ctx.raw
-              const h = Math.floor(dur/60)
-              const m = dur%60
-              return `${ctx.label}: ${h}時間${m}分`
-            }
+        legend:{ position:'bottom', labels:{ boxWidth:20, padding:15,color: '#f8faff'}},
+        tooltip: {
+          bodyColor: '#fff',    // ← ★ tooltip 内文
+          titleColor: '#fff',
+          callbacks: {
+          label: ctx => {
+          const dur = ctx.raw
+          const h = Math.floor(dur / 60)
+          const m = dur % 60
+          return `${ctx.label}: ${h}時間${m}分`
+        }
           }
         }
       }
@@ -424,14 +463,6 @@ function resetSchedule() {
 
 
 <style scoped>
-/*
-  NOTE:
-  - page_design.css 側でカード背景やボタンのスタイルを管理するため、
-    ここでは「page_design.css と競合する大きな背景指定」はしません。
-  - コンポーネント固有のレイアウト調整のみ最小限に残します。
-*/
-
-
 
 .schedule-preview {
   /* 幅などは元ファイルを踏襲（背景は page_design.css の .galaxy-card に任せる） */
@@ -547,8 +578,40 @@ function resetSchedule() {
 /* view-toggle / edit-toggle 内の .active は page_design.css と一貫するように */
 .view-toggle, .edit-toggle { display:flex; justify-content:center; gap:1rem; margin-bottom:1rem; }
 
-/* ボタン列の間隔だけ調整（ビジュアルは page_design.css の .btn-outline/.btn-neon が効く） */
-.button-row { display:flex; justify-content:space-between; gap:0.6rem; margin-top:1rem; align-items:center; }
+.button-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem; /* 少し広げると押しやすくなります */
+  margin-top: 1.5rem;
+  align-items: stretch; /* 子要素の高さを揃える */
+}
+
+.button-row button {
+  /* 高さを固定し、padding の干渉を防ぐ */
+  height: 48px;
+  flex: 1;           /* 両方のボタンを同じ幅にする（不要なら削除） */
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* 重要なプロパティ：これらで外枠と余白をリセット */
+  box-sizing: border-box; 
+  padding: 0 1rem;    /* 左右のみ余白、上下は height に任せる */
+  line-height: 1;
+  margin: 0;
+}
+
+/* 枠線の太さが違う場合の微調整 */
+.back-btn {
+  border: 1px solid rgba(170, 200, 255, 0.7) !important;
+}
+
+.confirm-btn {
+  /* neonボタンに border がある場合は合わせる */
+  border: 1px solid transparent !important; 
+  font-weight: bold;
+}
 
 /* deleteボタンの白背景を削除 */
 .delete-btn {
@@ -562,24 +625,8 @@ function resetSchedule() {
 
 .delete-btn:hover { transform: scale(1.2); }
 
-/* 戻る・リセットボタンを同サイズに統一 */
-.back-btn, .reset-btn {
-  padding: 0.6rem 1.2rem;   /* 高さ・横幅のバランス */
-  font-size: 0.95rem;
-  min-width: 80px;          /* 必要に応じて調整 */
-}
 
-/* 確定ボタンを少し大きく */
-.confirm-btn {
-  padding: 0.75rem 1.5rem;  /* 戻る・リセットより少し大きめ */
-  font-size: 1rem;
-  min-width: 100px;
-}
 
-/* 共通: ボタン高さを揃える */
-.button-row button {
-  height: 42px;  /* もしくは必要に応じて 40px〜45px */
-}
 
 
 </style>

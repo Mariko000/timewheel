@@ -31,6 +31,75 @@
 </div>
 
 
+<!-- ⚙️ データ管理ボタン（保存データがある場合だけ表示） -->
+<div  class="settings-wrapper">
+  <button
+    class="settings-btn"
+    @mousedown.prevent
+    @click="openModal"
+  >
+    ⚙️
+    <span class="label"></span>
+  </button>
+</div>
+
+<!-- 選択モーダル -->
+<div v-if="showModal && modalStep === 'choice'" class="modal-backdrop">
+  <div class="modal-content">
+    <h2>設定メニュー</h2>
+
+    <div class="modal-actions" style="flex-direction: column; gap: 1rem;">
+      <button @click="openTutorial" class="btn-outline">
+        📺 チュートリアルを再生する
+      </button>
+
+      <button @click="openResetConfirm" class="btn-danger">
+        ⚠️ データをリセットする
+      </button>
+
+      <button @click="closeModal" class="btn-cancel">
+        キャンセル
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- チュートリアル動画モーダル -->
+<div v-if="showModal && modalStep === 'tutorial'" class="modal-backdrop">
+  <div class="modal-content">
+    <h2>📺 チュートリアル</h2>
+
+    <video
+      src="/videos/opening-demo.mov"
+      controls
+      autoplay
+      style="width: 100%; border-radius: 12px; margin-top: 1rem;"
+    ></video>
+
+    <div class="modal-actions">
+      <button @click="closeModal" class="btn-cancel">
+        閉じる
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!--データ削除確認モーダル -->
+<div v-if="showModal && modalStep === 'reset'" class="modal-backdrop">
+  <div class="modal-content">
+    <h2>⚠️ データをリセットしますか？</h2>
+    <p>保存されているスケジュール・タスク・履歴が削除されます。</p>
+
+    <div class="modal-actions">
+      <button @click="closeModal" class="btn-cancel">キャンセル</button>
+      <button @click="resetAllData" class="btn-danger">🔥 本当にリセットする</button>
+    </div>
+  </div>
+</div>
+
+
+
 
 
     <!-- 中央コンテンツ -->
@@ -80,9 +149,37 @@
 
 
 <script setup>
-import { ref, onMounted, computed, onUnmounted } from "vue"
+import { watch,  nextTick, ref, onMounted, computed, onUnmounted, inject } from "vue"
 import { useRouter } from "vue-router"
 import MotionAvatar from "@/components/Avatar/MotionAvatar.vue"
+
+// チュートリアル
+import { useTutorial } from '@/composables/useTutorial'
+import { getOpeningSteps } from '@/composables/useTutorialSteps'
+import { isTutorialDone, markTutorialDoneFor } from '@/components/Tutorial/tutorialProgress'
+
+// App.vue からの判定を注入（デフォルトは false としておく）
+// watchで監視「確定後」に反応させる
+const tutorial = useTutorial(2000)
+const isFirstTutorial = inject('isFirstTutorial', ref(false))
+// 「自分の分だけ」制御
+watch(
+  isFirstTutorial,
+  async (val) => {
+    if (!val) return
+    if (isTutorialDone('opening')) return
+
+    await nextTick()
+
+    tutorial.start(getOpeningSteps(), {
+      onFinish: () => {
+        markTutorialDoneFor('opening')
+      }
+    })
+  },
+  { immediate: true }
+)
+
 
 // 開発モード切り替え
 const devMode = true
@@ -98,8 +195,39 @@ const showLogo = ref(true)
 const showContent = ref(false)
 const showButton = ref(false)
 
+// 設定
+const showModal = ref(false);
+const hasSavedData = ref(false);
+const modalStep = ref(null)
+// 'choice' | 'tutorial' | 'reset'
 
-// ✅ 1. 現在時刻表示用の変数を追加し、更新処理を実装
+function openModal() {
+  modalStep.value = 'choice'
+  showModal.value = true;
+}
+
+function openTutorial() {
+  modalStep.value = 'tutorial'
+}
+
+function openResetConfirm() {
+  modalStep.value = 'reset'
+}
+
+function closeModal() {
+  showModal.value = false
+  modalStep.value = null
+}
+
+
+// 削除処理（必要なkey名に合わせて修正）
+function resetAllData() {
+  localStorage.clear(); // or: removeItem()で個別対応
+  showModal.value = false;
+  hasSavedData.value = false; // UI更新
+}
+
+// 1. 現在時刻表示用の変数を追加し、更新処理を実装
 
 
 const currentTime = ref(''); // 現在時刻を保持するリアクティブ変数
@@ -132,6 +260,18 @@ onMounted(() => {
     }, 1000)
   }, 2000)
 })
+
+// LocalStorageにデータがあるか判定
+onMounted(() => {
+  const keys = Object.keys(localStorage);
+  hasSavedData.value = keys.some(k => 
+    k.includes("tasks") || k.includes("schedule") || k.includes("timeWheel")
+  );
+});
+
+
+
+
 
 // コンポーネントが破棄されるときにタイマーを解除（メモリリーク防止）
 onUnmounted(() => {
@@ -215,6 +355,16 @@ function goToSetup() {
 function goToWeekData() {
   router.push('/WeekData')
 }
+
+// tutorialMessagesをインポート
+//onMounted(() => {
+  //tutorial.start([
+   // { target: '#settings-btn', messageID: 'open_settings' },
+   // { target: '#start-button', messageID: 'start_button' },
+    //{ target: '#week-history', messageID: 'week_history' }
+  //])
+//})
+
 </script>
 
 <style scoped>
@@ -271,6 +421,67 @@ function goToWeekData() {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+.settings-btn {
+  background: transparent !important;
+  border: none !important;
+  backdrop-filter: none !important;
+
+  padding: 0;                 /* ← 重要：円の余白を消す */
+  border-radius: 0;           /* ← 円を解除 */
+  box-shadow: none;           /* ← 念のため */
+  appearance: none;           /* ← Safari対策 */
+  
+  color: white;
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+/* 光だけ出す */
+.settings-btn:hover {
+  text-shadow: 0 0 6px rgba(255,255,255,0.8);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+}
+
+.modal-content {
+  background: #1b1d2f;
+  padding: 1.6rem;
+  border-radius: 1rem;
+  width: 88%;
+  max-width: 340px;
+  text-align: center;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1.6rem;
+}
+
+.btn-cancel {
+  background: #444;
+  color: #fff;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+}
+
+.btn-danger {
+  background: #ff4e50;
+  color: white;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+}
+
 
 @keyframes fadeInOut {
   0% { opacity: 0; transform: scale(0.95); }
@@ -548,7 +759,7 @@ function goToWeekData() {
 }
 
 .next-button {
-  margin-top: 2rem;
+  margin: 1rem 0 1rem; /* 上下の間隔を追加（上2rem / 下1.5rem） */
   z-index: 30; /* ← 背景より前に出して背景のオーバーレイをピンポイントで無効に */
   background-color: #3b82f6;
   color: white;
@@ -563,6 +774,9 @@ function goToWeekData() {
 .next-button:hover {
   background-color: #2563eb;
 }
+.btn-outline {
+  margin: 1.5rem 0 3rem; /* 上1.5rem / 下は大きめに */
+}
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
@@ -572,4 +786,79 @@ function goToWeekData() {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Settings button (右上固定 + hoverでラベル表示) */
+.settings-wrapper {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 30;
+}
+
+.settings-btn {
+  position: relative;
+  padding: 8px 10px;
+  border-radius: 50px;
+  border: 1px solid rgba(255,255,255,0.3);
+  background: rgba(40, 40, 60, 0.6);
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: background 0.25s ease;
+}
+
+.settings-btn:hover {
+  background: rgba(255,255,255,0.18);
+}
+
+
+/* hover表示テキスト */
+.settings-btn .label {
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  margin-left: 6px;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  transform: translateX(-4px);
+}
+
+/* hoverで表示 */
+.settings-btn:hover .label {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.modal-content h2 {
+  color: #ff4d6d;
+  text-shadow: 0 0 6px rgba(255, 80, 120, 0.6);
+}
+.modal-content p {
+  color: #fafafa;
+  text-shadow: 0 0 4px rgba(255,255,255,0.2);
+}
+
+
+/* 📱 スマホでは hover発生しない → ラベル非表示のまま */
+@media (max-width: 768px) {
+  .settings-btn {
+    font-size: 1.5rem; /* 親指タップ向けサイズ */
+    padding: 10px;
+  }
+
+  .settings-btn .label {
+    display: none;
+  }
+}
+/* 📱 スマホで読みやすくしたい場合 */
+@media (max-width: 480px) {
+  .modal-content p {
+    font-size: 1rem;
+  }
+  .modal-content h2 {
+    font-size: 1.3rem;
+  }
+}
+
 </style>

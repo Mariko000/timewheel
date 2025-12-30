@@ -1,6 +1,5 @@
 <template>
   <CardLayout>
- 
     <h3 class="text-glow">スケジュール基本設定（必須）</h3>
     <!-- アバター挨拶 -->
     <transition name="fade">
@@ -116,12 +115,38 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, nextTick } from 'vue'
+import { watch, ref, onMounted, nextTick, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { mainActivities } from '@/stores/mainActivities.js'
 import GuideAvatar from "@/components/Avatar/GuideAvatar.vue"
 import { useScheduleStore } from '@/stores/scheduleStore'
 
+
+//チュートリアル
+import { useTutorial } from '@/composables/useTutorial'
+import { getTimeSetupSteps } from '@/composables/useTutorialSteps'
+import { isTutorialDone, markTutorialDoneFor } from '@/components/Tutorial/tutorialProgress'
+
+// 2. App.vue からの判定を受け取る
+const isFirstTutorial = inject('isFirstTutorial', ref(false))
+const tutorial = useTutorial(2000)
+
+watch(
+  isFirstTutorial,
+  async (val) => {
+    if (!val) return
+    if (isTutorialDone('timeSetup')) return
+
+    console.log('TimeSetup: チュートリアル開始')
+
+    await nextTick()
+    tutorial.start(getTimeSetupSteps())
+
+    // 最後まで流れた前提
+    markTutorialDoneFor('timeSetup')
+  },
+  { immediate: true }
+)
 
 const showSchoolSettings = ref(false)
 const showExtraSettings = ref(false)
