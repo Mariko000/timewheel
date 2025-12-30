@@ -50,7 +50,7 @@
 
     <div class="modal-actions" style="flex-direction: column; gap: 1rem;">
       <button @click="openTutorial" class="btn-outline">
-        📺 チュートリアルを再生する
+        チュートリアルを再生する
       </button>
 
       <button @click="openResetConfirm" class="btn-danger">
