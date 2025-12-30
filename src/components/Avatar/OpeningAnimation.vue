@@ -181,7 +181,6 @@ watch(
       }
     })
   },
-  { immediate: true }
 )
 
 
