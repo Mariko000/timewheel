@@ -67,14 +67,18 @@
 <!-- チュートリアル動画モーダル -->
 <div v-if="showModal && modalStep === 'tutorial'" class="modal-backdrop">
   <div class="modal-content">
-    <h2>📺 チュートリアル</h2>
+    <h2> チュートリアル</h2>
 
-    <video
-      src="/videos/opening-demo.mov"
-      controls
-      autoplay
-      style="width: 100%; border-radius: 12px; margin-top: 1rem;"
-    ></video>
+    <div class="video-wrapper">
+  <iframe
+    src="https://www.youtube.com/embed/jA9H8iQnhO0?playsinline=1"
+    title="TimeWheel Tutorial"
+    frameborder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+    allowfullscreen
+  ></iframe>
+</div>
+
 
     <div class="modal-actions">
       <button @click="closeModal" class="btn-cancel">
@@ -480,6 +484,24 @@ function goToWeekData() {
   color: white;
   padding: 0.6rem 1rem;
   border-radius: 8px;
+}
+
+/* ビデオ用のラッパー */
+.video-wrapper {
+  position: relative;
+  width: 100%;
+  margin-top: 1rem;
+  padding-top: 56.25%; /* 16:9 */
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.video-wrapper iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
 }
 
 
