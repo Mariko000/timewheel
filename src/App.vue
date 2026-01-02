@@ -17,6 +17,8 @@ import { subtractMinutes } from '@/stores/time.js'
 
 const store = useScheduleStore()
 const tutorial = useTutorial()
+provide('tutorial', tutorial)
+
 const swRegistration = ref(null)
 let reminderCheckTimer = null
 
@@ -26,15 +28,26 @@ let reminderCheckTimer = null
 
 // setup直下で宣言し、子コンポーネントがリアクティブに変化を検知できるようにする
 const isFirstTutorial = ref(false)
+const tutorialJudged = ref(false)
+
 provide('isFirstTutorial', isFirstTutorial)
+provide('tutorialJudged', tutorialJudged)
 
 onMounted(async () => {
+  // ★ 追加：この起動ですでに判定済みなら何もしない
+  if (tutorialJudged.value) {
+    console.log('🛑 tutorial 判定は既に完了済み（再 mount 防止）')
+    return
+  }
+  tutorialJudged.value = true
+  // ↑ ここまでがガード（awaitより前！）
+
   // --- 2. 判定を「データの保存」より前に行う ---
   const allKeys = Object.keys(localStorage)
   const hasAnyPastData = allKeys.some(key => key.startsWith('scheduleData-'))
   const isFirstFlag = isFirstLaunch()
 
-  // チュートリアルを表示すべきか判定
+  // チュートリアルを表示すべきか判定（1回だけ確定）
   const shouldShowTutorial = isFirstFlag && !hasAnyPastData
   isFirstTutorial.value = shouldShowTutorial
 
@@ -59,31 +72,18 @@ onMounted(async () => {
     if (item.notified === undefined) item.notified = false
     if (item.start) item._reminderTime = subtractMinutes(item.start, Number(item.reminderOffset))
   })
-  
-  // ここで保存することで、次回の起動からは shouldShowTutorial が false になる
+
   store.saveSchedule(todayKey)
 
-  // 3. 実行ロジック
+  // 3. 実行ロジック（ログ用途）
   if (shouldShowTutorial) {
-    console.log("👉 判定結果: 初回かつデータ無し。チュートリアルを開始します。")
-    // ※ 実際の開始処理は各コンポーネント側の onMounted で inject を見て判断される
-    // もし App.vue 自体で開始させる必要がある場合は以下を有効化
-    /*
-    await nextTick()
-    setTimeout(() => {
-      if (!tutorial.active.value && typeof getOpeningSteps === 'function') {
-         tutorial.start(getOpeningSteps()) 
-         markTutorialDone()
-      }
-    }, 1000)
-    */
+    console.log("👉 判定結果: 初回かつデータ無し。チュートリアル対象")
   } else {
-    console.log("👉 判定結果: チュートリアルは不要です。理由:", { 
-      "既読フラグがある": !isFirstFlag, 
-      "過去データがある": hasAnyPastData 
+    console.log("👉 判定結果: チュートリアルは不要", {
+      "既読フラグがある": !isFirstFlag,
+      "過去データがある": hasAnyPastData
     })
-    // 既にデータがある場合は、チュートリアルを「完了」扱いにしておく
-    if (isFirstFlag) markTutorialDone() 
+    if (isFirstFlag) markTutorialDone()
   }
 
   // 4. リマインダー監視開始
@@ -91,6 +91,7 @@ onMounted(async () => {
     reminderCheckTimer = setInterval(checkReminders, 60 * 1000)
   }, 500)
 })
+
 
 onUnmounted(() => {
   if (reminderCheckTimer) clearInterval(reminderCheckTimer)

@@ -163,25 +163,29 @@ import { getOpeningSteps } from '@/composables/useTutorialSteps'
 import { isTutorialDone, markTutorialDoneFor } from '@/components/Tutorial/tutorialProgress'
 
 // App.vue からの判定を注入（デフォルトは false としておく）
-// watchで監視「確定後」に反応させる
-const tutorial = useTutorial(2000)
+/* アニメ完了 × 初回 → チュートリアル */
+
+const isOpeningAnimationDone = ref(false)
 const isFirstTutorial = inject('isFirstTutorial', ref(false))
-// 「自分の分だけ」制御
-watch(
-  isFirstTutorial,
-  async (val) => {
-    if (!val) return
-    if (isTutorialDone('opening')) return
+const tutorial = inject('tutorial')
 
-    await nextTick()
 
-    tutorial.start(getOpeningSteps(), {
-      onFinish: () => {
-        markTutorialDoneFor('opening')
-      }
-    })
-  },
-)
+
+//watch(
+  //isFirstTutorial,
+  //async (val) => {
+  //  if (!val) return
+   // if (isTutorialDone('opening')) return
+
+   // await nextTick()
+
+   // tutorial.start(getOpeningSteps(), {
+   //   onFinish: () => {
+     //   markTutorialDoneFor('opening')
+     // }
+    //})
+  //},
+//)
 
 
 // 開発モード切り替え
@@ -247,32 +251,75 @@ function updateCurrentTime() {
 }
 
 onMounted(() => {
-  // 初回表示
-  updateCurrentTime();
-  // 1秒ごとに時刻を更新
-  timerId = setInterval(updateCurrentTime, 1000);
-  // ① ロゴを2秒表示して消す
+  // 時計
+  updateCurrentTime()
+  timerId = setInterval(updateCurrentTime, 1000)
+
+  // Opening animation
   setTimeout(() => {
     showLogo.value = false
-    // ② アバター＆挨拶を表示
     showContent.value = true
 
-    // ③ さらに1秒後にボタンを表示
     setTimeout(() => {
       showButton.value = true
+      isOpeningAnimationDone.value = true
     }, 1000)
   }, 2000)
+
+  // 保存データ判定（UI用）
+  const keys = Object.keys(localStorage)
+  hasSavedData.value = keys.some(k =>
+    k.includes("tasks") || k.includes("schedule") || k.includes("timeWheel")
+  )
 })
 
+
+ // onMounted(() => {
+  // 初回表示
+   // updateCurrentTime();
+  // 1秒ごとに時刻を更新
+   // timerId = setInterval(updateCurrentTime, 1000);
+  // ① ロゴを2秒表示して消す
+   // setTimeout(() => {
+     // showLogo.value = false
+    // ② アバター＆挨拶を表示
+     // showContent.value = true
+
+    // ③ さらに1秒後にボタンを表示
+     // setTimeout(() => {
+       // showButton.value = true
+       // isOpeningAnimationDone.value = true   // ← アニメ完了のトリガー
+     // }, 1000)
+   // }, 2000)
+ // })
+
 // LocalStorageにデータがあるか判定
-onMounted(() => {
-  const keys = Object.keys(localStorage);
-  hasSavedData.value = keys.some(k => 
-    k.includes("tasks") || k.includes("schedule") || k.includes("timeWheel")
-  );
-});
+ // onMounted(() => {
+  //  const keys = Object.keys(localStorage);
+   // hasSavedData.value = keys.some(k => 
+    //  k.includes("tasks") || k.includes("schedule") || k.includes("timeWheel")
+   // );
+ // });
 
 
+/* アニメ完了 × 初回 → チュートリアル */
+watch(
+  [isOpeningAnimationDone, isFirstTutorial],
+  async ([animationDone, first]) => {
+    if (!animationDone) return
+    if (!first) return
+    if (isTutorialDone('opening')) return
+
+    await nextTick()
+
+    tutorial.start(getOpeningSteps(), {
+      onFinish: () => {
+        markTutorialDoneFor('opening')
+      }
+    })
+  },
+  { immediate: false }
+)
 
 
 

@@ -144,26 +144,30 @@ onMounted(async () => {
   renderChart()
 })
 
-//チュートリアル
-import { useTutorial } from '@/composables/useTutorial'
+// チュートリアル
 import { getSchedulePreviewSteps } from '@/composables/useTutorialSteps'
 import { isTutorialDone, markTutorialDoneFor } from '@/components/Tutorial/tutorialProgress'
-//const isFirstTutorial = inject('isFirstTutorial', false)
+
+// App.vue から注入
+const tutorial = inject('tutorial')
 const isFirstTutorial = inject('isFirstTutorial', ref(false))
-const tutorial = useTutorial(2000)
 
 watch(
   isFirstTutorial,
   async (val) => {
     if (!val) return
+    if (!tutorial) return
     if (isTutorialDone('schedulePreview')) return
 
     console.log('SchedulePreview: チュートリアル開始')
 
     await nextTick()
-    tutorial.start(getSchedulePreviewSteps())
 
-    markTutorialDoneFor('schedulePreview')
+    tutorial.start(getSchedulePreviewSteps(), {
+      onFinish: () => {
+        markTutorialDoneFor('schedulePreview')
+      }
+    })
   },
   { immediate: true }
 )

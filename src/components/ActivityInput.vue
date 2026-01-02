@@ -86,26 +86,29 @@ const store = useScheduleStore()
 const newActivity = ref('')
 
 // チュートリアル
-import { useTutorial } from '@/composables/useTutorial'
 import { getActivityInputSteps } from '@/composables/useTutorialSteps'
 import { isTutorialDone, markTutorialDoneFor } from '@/components/Tutorial/tutorialProgress'
 
-
-const tutorial = useTutorial(2000)
+// App.vue から注入
+const tutorial = inject('tutorial')
 const isFirstTutorial = inject('isFirstTutorial', ref(false))
 
 watch(
   isFirstTutorial,
   async (val) => {
     if (!val) return
+    if (!tutorial) return
     if (isTutorialDone('activityInput')) return
 
     console.log('ActivityInput: チュートリアル開始')
 
     await nextTick()
-    tutorial.start(getActivityInputSteps())
 
-    markTutorialDoneFor('activityInput')
+    tutorial.start(getActivityInputSteps(), {
+      onFinish: () => {
+        markTutorialDoneFor('activityInput')
+      }
+    })
   },
   { immediate: true }
 )

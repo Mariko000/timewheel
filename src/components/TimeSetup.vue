@@ -127,26 +127,29 @@ import { useTutorial } from '@/composables/useTutorial'
 import { getTimeSetupSteps } from '@/composables/useTutorialSteps'
 import { isTutorialDone, markTutorialDoneFor } from '@/components/Tutorial/tutorialProgress'
 
-// 2. App.vue からの判定を受け取る
+// App.vue から受け取る
 const isFirstTutorial = inject('isFirstTutorial', ref(false))
-const tutorial = useTutorial(2000)
+const tutorial = inject('tutorial') // ✅ ここが重要
 
 watch(
   isFirstTutorial,
   async (val) => {
     if (!val) return
+    if (!tutorial) return
     if (isTutorialDone('timeSetup')) return
 
     console.log('TimeSetup: チュートリアル開始')
 
     await nextTick()
-    tutorial.start(getTimeSetupSteps())
 
-    // 最後まで流れた前提
-    markTutorialDoneFor('timeSetup')
+    tutorial.start(getTimeSetupSteps(), {
+      onFinish: () => {
+        markTutorialDoneFor('timeSetup')
+      }
+    })
   },
   { immediate: true }
-)
+  )
 
 const showSchoolSettings = ref(false)
 const showExtraSettings = ref(false)
