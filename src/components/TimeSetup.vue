@@ -129,7 +129,7 @@ import { isTutorialDone, markTutorialDoneFor } from '@/components/Tutorial/tutor
 
 // App.vue から受け取る
 const isFirstTutorial = inject('isFirstTutorial', ref(false))
-const tutorial = inject('tutorial') // ✅ ここが重要
+const tutorial = inject('tutorial')
 
 watch(
   isFirstTutorial,
@@ -137,8 +137,6 @@ watch(
     if (!val) return
     if (!tutorial) return
     if (isTutorialDone('timeSetup')) return
-
-    console.log('TimeSetup: チュートリアル開始')
 
     await nextTick()
 
@@ -149,7 +147,7 @@ watch(
     })
   },
   { immediate: true }
-  )
+)
 
 const showSchoolSettings = ref(false)
 const showExtraSettings = ref(false)

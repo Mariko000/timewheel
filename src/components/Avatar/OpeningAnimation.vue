@@ -165,49 +165,25 @@ import { isTutorialDone, markTutorialDoneFor } from '@/components/Tutorial/tutor
 // App.vue からの判定を注入（デフォルトは false としておく）
 /* アニメ完了 × 初回 → チュートリアル */
 
-const isOpeningAnimationDone = ref(false)
+const isFirstTutorial = inject('isFirstTutorial', ref(false))
 const tutorial = inject('tutorial')
-const isFirstTutorial = inject('isFirstTutorial')
-
 
 watch(
   [isOpeningAnimationDone, isFirstTutorial],
-  async ([animationDone, first]) => {
-    if (!animationDone) return
+  async ([done, first]) => {
+    if (!done) return
     if (!first) return
     if (isTutorialDone('opening')) return
 
-    await nextTick()
+    await nextTick() // ← DOMが完全に揃うのを待つ
 
     tutorial.start(getOpeningSteps(), {
       onFinish: () => {
-        console.log('🎉 tutorial 完了')
-
-        // 🔴 これが欠けていた
-        markTutorialDone()               // ← グローバル完了
-        markTutorialDoneFor('opening')   // ← セクション完了
+        markTutorialDoneFor('opening')
       }
     })
   }
 )
-
-
-
-//watch(
-  //isFirstTutorial,
-  //async (val) => {
-  //  if (!val) return
-   // if (isTutorialDone('opening')) return
-
-   // await nextTick()
-
-   // tutorial.start(getOpeningSteps(), {
-   //   onFinish: () => {
-     //   markTutorialDoneFor('opening')
-     // }
-    //})
-  //},
-//)
 
 
 // 開発モード切り替え

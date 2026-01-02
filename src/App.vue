@@ -37,10 +37,11 @@ onMounted(() => {
   console.log('tutorial 判定', { shouldShowTutorial })
 
   // ⭐ tutorial 完了時のフックをここで定義
-  tutorial.onFinish = () => {
-    console.log('🎉 tutorial 完了（App.vue）')
-    markTutorialDone()
-  }
+  tutorial.setOnFinish(() => {
+  console.log(' tutorial 完了（App.vue）')
+  markTutorialDone()
+})
+
 
   // schedule 初期化（チュートリアルと無関係）
   const todayKey = new Date().toISOString().slice(0, 10)

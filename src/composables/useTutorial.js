@@ -71,11 +71,19 @@ export function useTutorial(interval = 3000) {
     active.value = false
     currentMessage.value = ''
     index = 0
-
+  
     if (natural && typeof onFinish === 'function') {
       onFinish()
     }
   }
-
-  return { active, currentMessage, start, stop }
+  
+  return {
+    active,
+    currentMessage,
+    start,
+    stop,
+    setOnFinish(fn) {
+      onFinish = fn
+    }
+  }
 }
