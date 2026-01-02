@@ -166,8 +166,20 @@ import { isTutorialDone, markTutorialDoneFor } from '@/components/Tutorial/tutor
 /* アニメ完了 × 初回 → チュートリアル */
 
 const isOpeningAnimationDone = ref(false)
-const isFirstTutorial = inject('isFirstTutorial', ref(false))
 const tutorial = inject('tutorial')
+const isFirstTutorial = inject('isFirstTutorial')
+
+watch(isFirstTutorial, async (val) => {
+  if (!val) return
+
+  await nextTick()
+  tutorial.start(getOpeningSteps(), {
+    onFinish() {
+      console.log('🎉 tutorial 完了')
+      markTutorialDone()
+    }
+  })
+}, { immediate: true })
 
 
 

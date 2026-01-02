@@ -28,50 +28,22 @@ provide('tutorialJudged', tutorialJudged)
 let reminderCheckTimer = null
 
 onMounted(() => {
-  // 二重判定防止
   if (tutorialJudged.value) return
   tutorialJudged.value = true
 
-  const allKeys = Object.keys(localStorage)
-  const hasAnyPastData = allKeys.some(key => key.startsWith('scheduleData-'))
-  const isFirstFlag = isFirstLaunch()
-
-  const shouldShowTutorial = isFirstFlag && !hasAnyPastData
+  const shouldShowTutorial = isFirstLaunch()
   isFirstTutorial.value = shouldShowTutorial
 
-  console.log('tutorial 判定', {
-    allKeys,
-    hasAnyPastData,
-    isFirstFlag,
-    shouldShowTutorial
-  })
+  console.log('tutorial 判定', { shouldShowTutorial })
 
-  // schedule 初期化
+  // schedule 初期化（チュートリアルと無関係）
   const todayKey = new Date().toISOString().slice(0, 10)
   store.loadSchedule(todayKey)
 
   if (!Array.isArray(store.schedule)) store.schedule = []
-
-  store.schedule.forEach(item => {
-    if (item.completed === undefined) item.completed = false
-    if (item.reminderOffset === undefined) item.reminderOffset = store.globalReminderOffset
-    if (item.notified === undefined) item.notified = false
-    if (item.start) {
-      item._reminderTime = subtractMinutes(
-        item.start,
-        Number(item.reminderOffset)
-      )
-    }
-  })
-
   store.saveSchedule(todayKey)
-
-  if (!shouldShowTutorial && isFirstFlag) {
-    markTutorialDone()
-  }
-
-  reminderCheckTimer = setInterval(checkReminders, 60 * 1000)
 })
+
 
 onUnmounted(() => {
   if (reminderCheckTimer) clearInterval(reminderCheckTimer)
