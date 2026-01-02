@@ -169,17 +169,27 @@ const isOpeningAnimationDone = ref(false)
 const tutorial = inject('tutorial')
 const isFirstTutorial = inject('isFirstTutorial')
 
-watch(isFirstTutorial, async (val) => {
-  if (!val) return
 
-  await nextTick()
-  tutorial.start(getOpeningSteps(), {
-    onFinish() {
-      console.log('🎉 tutorial 完了')
-      markTutorialDone()
-    }
-  })
-}, { immediate: true })
+watch(
+  [isOpeningAnimationDone, isFirstTutorial],
+  async ([animationDone, first]) => {
+    if (!animationDone) return
+    if (!first) return
+    if (isTutorialDone('opening')) return
+
+    await nextTick()
+
+    tutorial.start(getOpeningSteps(), {
+      onFinish: () => {
+        console.log('🎉 tutorial 完了')
+
+        // 🔴 これが欠けていた
+        markTutorialDone()               // ← グローバル完了
+        markTutorialDoneFor('opening')   // ← セクション完了
+      }
+    })
+  }
+)
 
 
 
