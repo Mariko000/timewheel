@@ -154,6 +154,31 @@ function isSelected(name) {
   return store.activities.some(a => a.name === name)
 }
 
+
+
+  // 通学か通勤のどちらか一方のみ表示 され、ユーザーが時間を設定できる
+const filteredPresets = computed(() => {
+  // メイン活動に応じて通勤 or 通学を表示
+  const main = store.mainActivity
+  return store.presetActivities.filter(p => {
+    if (main === '学校') {
+      // 学校なら通学のみ
+      if (p.name === '通勤') return false
+      return true
+    } else if (['仕事','早番シフト','日勤帯','夜勤帯①','夜勤帯②'].includes(main)) {
+      // 仕事なら通勤のみ
+      if (p.name === '通学') return false
+      return true
+    }
+    return true
+  })
+})
+// --- アバターリアクションロジック ---
+// --- リアクションを1つずつ1秒おきに切り替える（アニメーションみたいなAIぽい機能）---
+//  watchでstore.activitiesを監視してリアクションを更新
+
+// --- Activity監視 ---
+
 // 通勤／通学は ActivityInput.vue では単一オブジェクトとして扱う
 //それ以外の活動は通常通り toggle, 関数の中で条件分岐を入れている
 // プリセットの追加・削除（通勤／通学を単一オブジェクトとして扱う）
@@ -187,28 +212,6 @@ function toggleActivity(preset) {
   store.setActivities([...store.activities])
 }
 
-  // 通学か通勤のどちらか一方のみ表示 され、ユーザーが時間を設定できる
-const filteredPresets = computed(() => {
-  // メイン活動に応じて通勤 or 通学を表示
-  const main = store.mainActivity
-  return store.presetActivities.filter(p => {
-    if (main === '学校') {
-      // 学校なら通学のみ
-      if (p.name === '通勤') return false
-      return true
-    } else if (['仕事','早番シフト','日勤帯','夜勤帯①','夜勤帯②'].includes(main)) {
-      // 仕事なら通勤のみ
-      if (p.name === '通学') return false
-      return true
-    }
-    return true
-  })
-})
-// --- アバターリアクションロジック ---
-// --- リアクションを1つずつ1秒おきに切り替える（アニメーションみたいなAIぽい機能）---
-//  watchでstore.activitiesを監視してリアクションを更新
-
-// --- Activity監視 ---
 watch(
   () => store.activities,
   (newActivities) => {
@@ -259,7 +262,8 @@ watch(
     avatarMood.value = reaction.mood;
     avatarMessage.value = reaction.text;
   },
-  { deep: true }
+  { deep: true,
+    flush: 'sync' }
 );
 
 // アクテビティ手動追加
