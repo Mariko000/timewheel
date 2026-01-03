@@ -167,6 +167,7 @@ import { isTutorialDone, markTutorialDoneFor } from '@/components/Tutorial/tutor
 
 const isFirstTutorial = inject('isFirstTutorial', ref(false))
 const tutorial = inject('tutorial')
+const isOpeningAnimationDone = ref(false)
 
 watch(
   [isOpeningAnimationDone, isFirstTutorial],
