@@ -212,113 +212,56 @@ const filteredPresets = computed(() => {
 watch(
   () => store.activities,
   (newActivities) => {
-    const reactions = [];
+    let reaction = null;
 
-    const reading = newActivities.find(a => a.name === '読書');
-    const study = newActivities.find(a => a.name === '勉強');
-    const jogging = newActivities.find(a => a.name === 'ジョギング');
-    const drawing = newActivities.find(a => a.name === 'イラスト');
-    const baking = newActivities.find(a => a.name === 'お菓子作り');
-    const guitar = newActivities.find(a => a.name === 'ギター');
-    const gardening = newActivities.find(a => a.name === 'ガーデニング');
-    const game = newActivities.find(a => a.name === 'ゲーム');
-    const movie = newActivities.find(a => a.name === '映画鑑賞');
-    const craft = newActivities.find(a => a.name === 'ハンドメイド / 編み物');
-    const workout = newActivities.find(a => a.name === '筋トレ');
-    const cycling = newActivities.find(a => a.name === 'サイクリング');
-    const karaoke = newActivities.find(a => a.name === 'カラオケ / 歌');
+    const find = name => newActivities.find(a => a.name === name);
 
-    // --- 既存反応 ---
-    if (reading?.duration >= 15) {
-      reactions.push({ mood: "happy", text: "いいね！何の本読むの？" });
-    }
+    const reading = find('読書');
+    const study = find('勉強');
+    const jogging = find('ジョギング');
+    const drawing = find('イラスト');
+    const baking = find('お菓子作り');
+    const guitar = find('ギター');
+    const gardening = find('ガーデニング');
+    const game = find('ゲーム');
+    const movie = find('映画鑑賞');
+    const craft = find('ハンドメイド / 編み物');
+    const workout = find('筋トレ');
+    const cycling = find('サイクリング');
+    const karaoke = find('カラオケ / 歌');
 
-    if (study) {
-      if (study.duration < 30) {
-        reactions.push({ mood: "sad", text: "勉強時間がちょっと短いね…" });
-      } else {
-        reactions.push({ mood: "happy", text: "勉強バッチリだね！" });
-      }
-    }
-
-    if (jogging?.duration >= 30) {
-      reactions.push({ mood: "surprise", text: "ジョギング頑張ってね！" });
-    }
-
-    // --- 新規アクティビティ反応 ---
-    if (drawing?.duration >= 30) {
-      reactions.push({ mood: "happy", text: "イラスト楽しそう！見せてほしいな〜" });
-    }
-
-    if (baking?.duration >= 60) {
-      reactions.push({ mood: "happy", text: "お菓子作りいいね！甘い香りが漂ってきそう" });
-    }
-
-    if (guitar?.duration >= 30) {
-      reactions.push({ mood: "happy", text: "ギター練習してるんだね！" });
-    }
-
-    if (gardening?.duration >= 30) {
-      reactions.push({ mood: "relaxed", text: "ガーデニング素敵 気持ちよさそう" });
-    }
-
-    if (game?.duration >= 60) {
-      reactions.push({ mood: "happy", text: "ゲームタイム楽しんでね！" });
-
-    if (movie?.duration >= 60) {
-      reactions.push({ mood: "relaxed", text: "映画鑑賞いいね！ゆったり楽しんでね🎬" });
-    }
-
-    if (craft?.duration >= 30) {
-      reactions.push({ mood: "happy", text: "ハンドメイド楽しそう🧶完成品見たいな〜" });
-    }
-
-    if (workout?.duration >= 30) {
-      reactions.push({ mood: "energetic", text: "筋トレ頑張ってるね💪" });
-    }
-
-    if (cycling?.duration >= 30) {
-      reactions.push({ mood: "happy", text: "サイクリングいいね！風を感じて気持ちよさそう🚴‍♀️" });
-    }
-
+    // 優先順で1つだけ決める
     if (karaoke?.duration >= 30) {
-      reactions.push({ mood: "fun", text: "カラオケで盛り上がろう🎤楽しんでね！" });
+      reaction = { mood: "fun", text: "カラオケで盛り上がろう！" };
+    } else if (cycling?.duration >= 30) {
+      reaction = { mood: "happy", text: "サイクリングいいね！🚴‍♀️" };
+    } else if (workout?.duration >= 30) {
+      reaction = { mood: "energetic", text: "筋トレ頑張って！" };
+    } else if (movie?.duration >= 60) {
+      reaction = { mood: "relaxed", text: "映画鑑賞いいね🎬" };
+    } else if (game?.duration >= 60) {
+      reaction = { mood: "happy", text: "ゲームタイム楽しんでね！" };
+    } else if (reading?.duration >= 15) {
+      reaction = { mood: "happy", text: "いいね！何の本読むの？" };
+    } else if (study) {
+      reaction =
+        study.duration < 30
+          ? { mood: "sad", text: "勉強時間がちょっと短いね…" }
+          : { mood: "happy", text: "勉強バッチリだね！" };
     }
 
-    // --- 最後にストアに反映 ---
-    store.reactions = reactions;
-  }
-
-
-
-    // タイマー停止
-    if (reactionTimer) {
-      clearInterval(reactionTimer);
-      reactionTimer = null;
-    }
-
-     // --- reactions が空なら早期 return ---
-
-    if (reactions.length === 0) {
+    if (!reaction) {
       avatarMood.value = "normal";
       avatarMessage.value = "今日は何をする？";
       return;
     }
 
-    // 順番に切り替え
-    let index = 0;
-    const showReaction = () => {
-      const r = reactions[index];
-      avatarMood.value = r.mood;
-      avatarMessage.value = r.text;
-      index = (index + 1) % reactions.length;
-    };
-
-    showReaction();
-    reactionTimer = setInterval(showReaction, 1500);
+    avatarMood.value = reaction.mood;
+    avatarMessage.value = reaction.text;
   },
   { deep: true }
 );
+
 // アクテビティ手動追加
 // --- アクテビティ手動追加 ---
 function addCustomActivity() {
