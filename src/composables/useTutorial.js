@@ -43,13 +43,19 @@ export function useTutorial(interval = 3000) {
         return
       }
 
-      const exists = await waitForElement(step.selector)
+      const exists = await waitForElement(
+        step.selector,
+        step.mustExist ? 10000 : 3000
+      )
+    
       if (!exists) {
-        index++
-        showStep(index)
-        return
+        if (!step.mustExist) {
+          index++
+          showStep(index)
+          return
+        }
       }
-
+    
       highlight(step.selector)
       currentMessage.value = step.message
     }

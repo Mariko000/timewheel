@@ -9,6 +9,7 @@ export function getOpeningSteps() {
       {
         selector: '.settings-btn',
         message: 'データ管理：過去のTodoリストの中身や削除ができます。',
+        mustExist: true,
       },
       {
         selector: '.btn-outline',

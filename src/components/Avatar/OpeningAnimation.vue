@@ -37,6 +37,7 @@
     class="settings-btn"
     @mousedown.prevent
     @click="openModal"
+    @transitionend="onSettingsBtnTransitionEnd"
   >
     ⚙️
     <span class="label"></span>
@@ -156,6 +157,26 @@
 import { watch,  nextTick, ref, onMounted, computed, onUnmounted, inject } from "vue"
 import { useRouter } from "vue-router"
 import MotionAvatar from "@/components/Avatar/MotionAvatar.vue"
+
+const isOpeningAnimationDone = ref(false)
+let settingsBtnNotified = false // 二重発火防止
+
+// OP animeでsettings-btnがチュートリアルでスキップされる効果を防止
+//.settings-btn 自身の「視覚的に表示し終わった瞬間」を捕まえる
+//その瞬間にを OpeningAnimation.vue の中で発火させる
+// console: settings-btn is visually ready
+function onSettingsBtnTransitionEnd(e) {
+  // background / box-shadow 等は無視して
+  // opacity / transform が終わった瞬間だけ拾う
+  if (settingsBtnNotified) return
+  if (e.target.classList.contains('settings-btn')) {
+    settingsBtnNotified = true
+
+    console.log('✅ settings-btn is visually ready')
+    isOpeningAnimationDone.value = true
+  }
+}
+
 
 // チュートリアル
 import { useTutorial } from '@/composables/useTutorial'
@@ -302,23 +323,7 @@ onMounted(() => {
 
 
 /* アニメ完了 × 初回 → チュートリアル */
-watch(
-  [isOpeningAnimationDone, isFirstTutorial],
-  async ([animationDone, first]) => {
-    if (!animationDone) return
-    if (!first) return
-    if (isTutorialDone('opening')) return
 
-    await nextTick()
-
-    tutorial.start(getOpeningSteps(), {
-      onFinish: () => {
-        markTutorialDoneFor('opening')
-      }
-    })
-  },
-  { immediate: false }
-)
 
 
 
