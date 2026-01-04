@@ -35,6 +35,13 @@
           <div class="activity-item flex flex-row justify-between items-center">
             <span>{{ act.name }}</span>
             <span class="duration text-dim">⏱ {{ act.duration }}分</span>
+            <button 
+            @click="removeSelectedActivity(i)" 
+            class="btn-delete"
+            title="削除"
+          >
+            ✕
+          </button>
           </div>
 
           <!-- スライダーで変更 -->
@@ -211,59 +218,103 @@ function toggleActivity(preset) {
 
   store.setActivities([...store.activities])
 }
+// 直前の配列を覚える
+let prevActivities = []
+const find = name => newActivities.find(a => a.name === name);
+// watchの外で、直前のリストを覚えておくための変数
+let prevActivityNames = [];
 
 watch(
   () => store.activities,
   (newActivities) => {
-    let reaction = null;
-
-    const find = name => newActivities.find(a => a.name === name);
+    // --- 1. 抽出部分（しっかり残します！） ---
+    const find = (name) => newActivities.find(a => a.name === name);
 
     const reading = find('読書');
     const study = find('勉強');
+    const illustration = find('イラスト');
+    const cooking = find('お菓子作り');
     const jogging = find('ジョギング');
-    const drawing = find('イラスト');
-    const baking = find('お菓子作り');
     const guitar = find('ギター');
     const gardening = find('ガーデニング');
     const game = find('ゲーム');
     const movie = find('映画鑑賞');
-    const craft = find('ハンドメイド / 編み物');
+    const handmade = find('ハンドメイド / 編み物');
     const workout = find('筋トレ');
     const cycling = find('サイクリング');
     const karaoke = find('カラオケ / 歌');
 
-    // 優先順で1つだけ決める
-    if (karaoke?.duration >= 30) {
-      reaction = { mood: "fun", text: "カラオケで盛り上がろう！" };
-    } else if (cycling?.duration >= 30) {
-      reaction = { mood: "happy", text: "サイクリングいいね！🚴‍♀️" };
-    } else if (workout?.duration >= 30) {
-      reaction = { mood: "energetic", text: "筋トレ頑張って！" };
-    } else if (movie?.duration >= 60) {
-      reaction = { mood: "relaxed", text: "映画鑑賞いいね🎬" };
-    } else if (game?.duration >= 60) {
-      reaction = { mood: "happy", text: "ゲームタイム楽しんでね！" };
-    } else if (reading?.duration >= 15) {
-      reaction = { mood: "happy", text: "いいね！何の本読むの？" };
-    } else if (study) {
-      reaction =
-        study.duration < 30
-          ? { mood: "sad", text: "勉強時間がちょっと短いね…" }
-          : { mood: "happy", text: "勉強バッチリだね！" };
+    // --- 2. 「今クリックされたもの」を特定するロジック ---
+    const currentNames = newActivities.map(a => a.name);
+    // 前回のリストにはいなくて、今回のリストにいる名前を探す
+    const addedName = currentNames.find(name => !prevActivityNames.includes(name));
+
+    if (addedName) {
+      // クリックされたのが「勉強」だったら、study変数（抽出データ）を使ってリアクション
+      if (addedName === '勉強' && study) {
+        avatarMood.value = 'happy';
+        avatarMessage.value = '勉強バッチリ！その調子！🔥';
+      } 
+      else if (addedName === 'イラスト' && illustration) {
+        avatarMood.value = 'happy';
+        avatarMessage.value = '素敵なイラストを描いてね🎨';
+      }
+      else if (addedName === 'ギター' && guitar) {
+        avatarMood.value = 'fun';
+        avatarMessage.value = 'ギターの音色、聴きたいな！🎸';
+      }
+      else if (addedName === 'お菓子作り' && cooking) {
+        avatarMood.value = 'happy';
+        avatarMessage.value = '美味しいお菓子ができるかな？🍪';
+      }
+      else if (addedName === 'ハンドメイド / 編み物' && handmade) {
+        avatarMood.value = 'happy';
+        avatarMessage.value = '手作り、集中しちゃいそうだね🧶';
+      }
+      else if (addedName === '筋トレ' && workout) {
+        avatarMood.value = 'energetic';
+        avatarMessage.value = '筋トレでリフレッシュしよう！💪';
+      }
+      else if (addedName === 'ジョギング' && jogging) {
+        avatarMood.value = 'happy';
+        avatarMessage.value = 'ジョギングで良い汗流そう！🏃';
+      }
+      else if (addedName === 'サイクリング' && cycling) {
+        avatarMood.value = 'happy';
+        avatarMessage.value = 'サイクリング、風が気持ち良さそう！🚴';
+      }
+      else if (addedName === 'カラオケ / 歌' && karaoke) {
+        avatarMood.value = 'fun';
+        avatarMessage.value = 'カラオケで盛り上がろう！🎤';
+      }
+      else if (addedName === 'ゲーム' && game) {
+        avatarMood.value = 'happy';
+        avatarMessage.value = 'ゲームタイム楽しんでね！🎮';
+      }
+      else if (addedName === '映画鑑賞' && movie) {
+        avatarMood.value = 'relaxed';
+        avatarMessage.value = 'ゆったり映画鑑賞タイムだね🎬';
+      }
+      else if (addedName === 'ガーデニング' && gardening) {
+        avatarMood.value = 'happy';
+        avatarMessage.value = 'お花のお世話、癒されるね🌿';
+      }
+      else if (addedName === '読書' && reading) {
+        avatarMood.value = 'happy';
+        avatarMessage.value = '読書で新しい発見があるかも📚';
+      }
     }
 
-    if (!reaction) {
-      avatarMood.value = "normal";
-      avatarMessage.value = "今日は何をする？";
-      return;
+    // --- 3. 状態の保存と、全削除時の対応 ---
+    if (newActivities.length === 0) {
+      avatarMood.value = 'normal';
+      avatarMessage.value = '今日は何をする？';
     }
 
-    avatarMood.value = reaction.mood;
-    avatarMessage.value = reaction.text;
+    // 最後に今回のリストを保存して、次回のクリックと比較できるようにする
+    prevActivityNames = [...currentNames];
   },
-  { deep: true,
-    flush: 'sync' }
+  { deep: true }
 );
 
 // アクテビティ手動追加
@@ -295,6 +346,19 @@ function addCustomActivity() {
   newActivity.value = "";
 }
 
+// 特定のインデックスを指定して削除し、ストアを更新する関数
+// 選択中の活動を個別に削除する
+function removeSelectedActivity(index) {
+  // 指定したインデックスの要素を1つ削除
+  store.activities.splice(index, 1);
+  
+  // ストアを更新
+  store.setActivities([...store.activities]);
+  
+  // 削除したあとのリアクション（任意）
+  avatarMood.value = "thinking";
+  avatarMessage.value = "ひとつ消したんだね。他には何をする？";
+}
 
 // スライダーで時間を更新
 function updateDuration(index, newDuration) {
@@ -385,6 +449,28 @@ watch(avatarMood, (newVal) => {
 .selected-list {
   margin-top: 1.5rem;
 }
+/* 削除ボタン */
+.btn-delete {
+  background: rgba(255, 0, 0, 0.2);
+  border: 1px solid rgba(255, 0, 0, 0.5);
+  color: #ff6b6b;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-delete:hover {
+  background: rgba(255, 0, 0, 0.4);
+  transform: scale(1.1);
+}
+
+
 
 /* アバター固定位置 */
 .avatar-fixed-wrapper {
