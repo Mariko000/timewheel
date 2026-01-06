@@ -1,10 +1,10 @@
 # TimeWheel
 > **スケジュール生成・管理アプリ**
-![トップ画面とスケジュール画面](./public/images/top_wheel.png)
+![トップ画面とスケジュール画面](public/images/top_wheel.png)
 
-##　Engineering Concepts
+## Engineering Concepts
 
-###　Technical Highlights: アルゴリズムの解説
+### Technical Highlights: アルゴリズムの解説
 本プロジェクトでは、24時間を超える計算の複雑性と、リアルタイムな整合性を担保するために、以下の3つの主要ロジックを自作しました。
 
 1. 時間の正規化：通算分（Absolute Minutes）への変換
@@ -62,7 +62,7 @@ Pinia を中心としたデータフローを構築し、複雑な計算をバ�
 4. 非同期アニメーションとチュートリアルの同期
 オープニングアニメーションとチュートリアルの開始タイミングが重なり、ターゲットとなるDOMが未描画でエラーになる課題がありました。 そこで、requestAnimationFrame を用いた DOM監視ポーリングロジック を自作し、確実にレンダリングが完了してからステップを開始させる堅牢なフローを構築しました。
 
-###　「時間の正規化」ロジック（絶対時間への変換）
+### 「時間の正規化」ロジック（絶対時間への変換）
 ```JavaScript
 
 /**
@@ -79,8 +79,10 @@ function absoluteMinutes(val) {
 
 ```
 
-###　「数珠つなぎ」ロジック（連鎖的同期）
-![「数珠つなぎ」ロジック（連鎖的同期）](./public/images/Screen Recording vuedraggable.gif)
+### 「数珠つなぎ」ロジック（連鎖的同期）
+
+![「数珠つなぎ」ロジック（連鎖的同期）](./public/images/demo.gif)
+
 ```JavaScript
 
 /**
@@ -124,8 +126,9 @@ async function waitForElement(selector, timeout = 3000) {
 
 
 
-##　Tech Stack & Architecture
-###　Core Technologies
+## Tech Stack & Architecture
+
+### Core Technologies
 Frontend: Vue 3 (Composition API)
 
 State Management: Pinia (Single Source of Truth)
@@ -147,7 +150,7 @@ PWA Support: Vite PWA
 Infrastructure: Vite / Vercel
 
 
-##　Design Philosophy: ユニバーサルデザインへの配慮
+## Design Philosophy: ユニバーサルデザインへの配慮
 単なるスケジューラーに留まらず、あらゆるユーザーにとっての「使いやすさ」を技術で実装しています。
 
 高コントラスト・テーマ: ギャラクシー（宇宙）をテーマにした配色により、視認性を向上。
