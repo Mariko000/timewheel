@@ -241,7 +241,7 @@ function getMainActivityBlock() {
     const lastEndAbs = absoluteMinutes(schedule.value[schedule.value.length -1].end)
     const sleepAbs = absoluteMinutes(sleepTime.value)
     if (lastEndAbs > sleepAbs) {
-      console.warn("⚠️ 就寝時間を超過しました（副活動も保持）")
+      console.warn("就寝時間を超過しました（副活動も保持）")
     }
 
     // computed再評価のためコピー
@@ -346,7 +346,7 @@ function getMainActivityBlock() {
 // 追加：睡眠時間オーバーチェック
 //活動が就寝時間 (sleepTime) をオーバーした場合
 //自動的に短縮してでもスケジュールに入れる
-//その状態になったら「⚠️ 睡眠時間を超える活動がありました」などのUIアラートを表示
+//その状態になったら「睡眠時間を超える活動がありました」などのUIアラートを表示
 
 
 const oversleepAlert = computed(() => {
